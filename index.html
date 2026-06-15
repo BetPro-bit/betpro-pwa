@@ -430,7 +430,7 @@
         <div class="divider"><div class="divider-line"></div><span class="divider-text">or</span><div class="divider-line"></div></div>
         <div class="text-center text-sm">Don't have an account? <span class="link" onclick="showScreen('register')">Register Free</span></div>
       </div>
-      <div class="hint-box">Demo: use any phone number + password</div>
+      
       <div class="feature-pills">
         <div class="pill">⚽ Sports</div>
         <div class="pill">🎮 Casino</div>
@@ -504,7 +504,7 @@
       </div>
       <button class="btn btn-green" id="otp-btn" onclick="handleOTP()">Verify & Activate</button>
       <div style="margin-top:20px;font-size:14px;color:var(--text2)">Didn't receive code? <span class="link" id="resend-btn" onclick="resendOTP()">Resend Code</span></div>
-      <div class="hint-box" style="margin-top:24px">Demo OTP: 123456</div>
+      
     </div>
   </div>
 
@@ -1259,25 +1259,40 @@ async function handleDeposit() {
       body: JSON.stringify({ phone:'254'+phone.replace(/^0/,''), amount, accountReference:'BETPRO-DEP', transactionDesc:'BetPro Deposit' })
     });
     const data = await res.json();
+    if (!data.success && !data.CheckoutRequestID) throw new Error('STK failed');
     closeDepositModal();
-    showToast(`📱 STK Push sent! Enter PIN on +254${phone}`, 'success', 5000);
-    setTimeout(() => {
-      state.balance += amount;
-      state.transactions.unshift({ type:'deposit', icon:'💰', desc:'M-Pesa Deposit', amount, date:new Date().toISOString().split('T')[0] });
-      updateBalances(); renderWallet();
-      showToast(`✅ KSh ${amount} added to wallet!`);
-    }, 6000);
+    showToast(`📱 STK Push sent! Enter M-Pesa PIN on your phone`, 'success', 5000);
+    // Poll for payment confirmation — do NOT add balance until confirmed
+    pollPaymentStatus(data.CheckoutRequestID, amount);
   } catch(e) {
     closeDepositModal();
-    showToast(`📱 STK Push sent to +254${phone}! Enter your PIN`, 'success', 5000);
-    setTimeout(() => {
-      state.balance += amount;
-      state.transactions.unshift({ type:'deposit', icon:'💰', desc:'M-Pesa Deposit', amount, date:new Date().toISOString().split('T')[0] });
-      updateBalances(); renderWallet();
-      showToast(`✅ KSh ${amount} added to wallet!`);
-    }, 6000);
+    showToast(`❌ Payment failed. Please try again or contact support.`, 'error');
   }
   setLoading('dep-btn', false, '💳 Pay Now');
+}
+
+async function pollPaymentStatus(checkoutRequestId, amount, attempts = 0) {
+  if (attempts > 10) { showToast('Payment not confirmed. If money was deducted contact support.', 'error'); return; }
+  await new Promise(r => setTimeout(r, 5000));
+  try {
+    const res = await fetch(API + '/api/payments/status/' + checkoutRequestId, {
+      headers: { 'Authorization': 'Bearer ' + state.token }
+    });
+    const data = await res.json();
+    if (data.status === 'completed') {
+      state.balance += amount;
+      await saveUserBalance();
+      state.transactions.unshift({ type:'deposit', icon:'💰', desc:'M-Pesa Deposit', amount, date:new Date().toISOString().split('T')[0] });
+      updateBalances(); renderWallet();
+      showToast(`✅ KSh ${amount.toLocaleString()} added to your wallet!`);
+    } else if (data.status === 'failed') {
+      showToast('Payment was cancelled or failed.', 'error');
+    } else {
+      pollPaymentStatus(checkoutRequestId, amount, attempts + 1);
+    }
+  } catch(e) {
+    pollPaymentStatus(checkoutRequestId, amount, attempts + 1);
+  }
 }
 
 async function handleWithdraw() {
