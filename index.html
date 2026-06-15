@@ -930,7 +930,13 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+// ── Supabase ───────────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://qqsfokmcnkzrbltrtvvq.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_nwtcx_KcrZJ_9OFpkSYryA_4w2Y_vok';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 const API = 'https://mpesa-backend-production-3705.up.railway.app';
 let state = {
   user: null, token: null, balance: 0,
@@ -1051,25 +1057,29 @@ async function handleLogin() {
   if (!phone) { showToast('Enter your phone number', 'error'); return; }
   if (!password) { showToast('Enter your password', 'error'); return; }
   setLoading('login-btn', true);
-  try {
-    const res = await fetch(API + '/api/auth/login', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ phone: '254' + phone.replace(/^0/,''), password })
-    });
-    const data = await res.json();
-    if (data.success || data.token) {
-      state.token = data.token; state.user = {phone: '254' + phone.replace(/^0/,'')};
-      state.balance = data.user?.balance || 0;
-      saveSession(); showScreen('main'); updateBalances();
-      showToast('Welcome back! 🎉');
-    } else { showToast(data.message || 'Login failed', 'error'); }
-  } catch(e) {
-    // Demo fallback
-    state.token = 'demo_' + Date.now(); state.user = {phone: '254' + phone.replace(/^0/,'')};
-    state.balance = 5000; saveSession(); showScreen('main'); updateBalances();
-    showToast('Welcome to BetPro! 🎉');
+  // Use email format for Supabase auth (phone@betpro.app)
+  const email = phone.replace(/^0/, '254') + '@betpro.app';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) {
+    showToast('Invalid phone or password', 'error');
+  } else {
+    state.token = data.session.access_token;
+    state.user = { phone: phone.replace(/^0/, '+254'), id: data.user.id };
+    await loadUserBalance(data.user.id);
+    saveSession(); showScreen('main'); updateBalances();
+    showToast('Welcome back! 🎉');
   }
   setLoading('login-btn', false, 'Sign In →');
+}
+
+async function loadUserBalance(userId) {
+  const { data } = await sb.from('users').select('balance').eq('id', userId).single();
+  state.balance = data?.balance || 0;
+}
+
+async function saveUserBalance() {
+  if (!state.user?.id) return;
+  await sb.from('users').upsert({ id: state.user.id, balance: state.balance });
 }
 
 async function handleRegister() {
@@ -1083,17 +1093,21 @@ async function handleRegister() {
   if (password !== confirm) { showToast('Passwords do not match', 'error'); return; }
   if (!state.terms) { showToast('Accept Terms & Conditions', 'error'); return; }
   setLoading('reg-btn', true);
-  try {
-    const res = await fetch(API + '/api/auth/register', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ phone: state.country.dial + phone, email, password, country: state.country.code })
-    });
-    const data = await res.json();
+  // Use phone-based email for Supabase
+  const sbEmail = phone.replace(/^0/, '254') + '@betpro.app';
+  const { data, error } = await sb.auth.signUp({
+    email: sbEmail, password,
+    options: { data: { phone: state.country.dial + phone, real_email: email, country: state.country.code } }
+  });
+  if (error) {
+    showToast(error.message || 'Registration failed', 'error');
+  } else {
+    // Create user record with 0 balance
+    if (data.user) {
+      await sb.from('users').insert({ id: data.user.id, phone: state.country.dial + phone, email, balance: 0, country: state.country.code });
+    }
     $('otp-phone-display').textContent = email;
-    showScreen('otp'); showToast('OTP sent to ' + email + '!');
-  } catch(e) {
-    $('otp-phone-display').textContent = email;
-    showScreen('otp'); showToast('OTP sent to ' + email + '! (Demo: 123456)');
+    showScreen('otp'); showToast('Check your email for verification link!');
   }
   setLoading('reg-btn', false, 'Create Account & Verify →');
 }
@@ -1105,27 +1119,15 @@ function otpInput(el, idx) {
 }
 
 async function handleOTP() {
-  const inputs = document.querySelectorAll('.otp-input');
-  const code = Array.from(inputs).map(i => i.value).join('');
-  if (code.length < 6) { showToast('Enter complete 6-digit code', 'error'); return; }
-  setLoading('otp-btn', true);
-  try {
-    await fetch(API + '/api/auth/verify-otp', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ phone: $('otp-phone-display').textContent, otp: code })
-    });
-    showToast('Account verified! Please login 🎉'); showScreen('login');
-  } catch(e) {
-    if (code === '123456') { showToast('Verified! Please login 🎉'); showScreen('login'); }
-    else { showToast('Invalid OTP', 'error'); }
-  }
-  setLoading('otp-btn', false, 'Verify & Activate');
+  showToast('Check your email inbox and click the verification link, then login! 🎉');
+  showScreen('login');
 }
 
-function resendOTP() { showToast('New OTP sent!'); }
+function resendOTP() { showToast('Check your email for the verification link!'); }
 
-function handleLogout() {
+async function handleLogout() {
   if (!confirm('Are you sure you want to sign out?')) return;
+  await sb.auth.signOut();
   state.token = null; state.user = null; state.balance = 0;
   localStorage.clear(); showScreen('login');
 }
@@ -1148,6 +1150,7 @@ function updateBalances() {
   $('wallet-balance').textContent = 'KSh ' + bal;
   $('profile-balance').textContent = 'KSh ' + bal;
   saveSession();
+  saveUserBalance();
 }
 function updateGameBalances() {
   ['av','mines','wheel','dice','plinko'].forEach(g => {
@@ -1606,8 +1609,17 @@ function selectCountry(code) {
 
 // Init
 initCountryChips();
-if (loadSession()) { showScreen('main'); updateBalances(); }
-else { showScreen('login'); }
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    state.token = session.access_token;
+    state.user = { id: session.user.id, phone: session.user.user_metadata?.phone || '' };
+    await loadUserBalance(session.user.id);
+    showScreen('main'); updateBalances();
+  } else {
+    showScreen('login');
+  }
+})();
 
 // ── Service Worker Registration ────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
