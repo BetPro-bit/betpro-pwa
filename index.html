@@ -490,21 +490,17 @@
   <!-- OTP SCREEN -->
   <div class="screen" id="screen-otp">
     <div class="auth-wrap" style="text-align:center">
-      <span style="color:var(--text2);cursor:pointer;display:block;text-align:left;margin-bottom:32px" onclick="showScreen('register')">← Back</span>
-      <div style="font-size:60px;margin-bottom:16px">📱</div>
-      <div style="font-size:28px;font-weight:800;margin-bottom:8px">Verify Phone</div>
-      <div style="font-size:14px;color:var(--text2);margin-bottom:32px;line-height:1.6">Enter the 6-digit code sent to your email<br/><span id="otp-phone-display" class="color-green fw-900"></span></div>
-      <div class="otp-row">
-        <input class="otp-input" maxlength="1" type="tel" oninput="otpInput(this,0)"/>
-        <input class="otp-input" maxlength="1" type="tel" oninput="otpInput(this,1)"/>
-        <input class="otp-input" maxlength="1" type="tel" oninput="otpInput(this,2)"/>
-        <input class="otp-input" maxlength="1" type="tel" oninput="otpInput(this,3)"/>
-        <input class="otp-input" maxlength="1" type="tel" oninput="otpInput(this,4)"/>
-        <input class="otp-input" maxlength="1" type="tel" oninput="otpInput(this,5)"/>
+      <div style="font-size:60px;margin-bottom:16px">✉️</div>
+      <div style="font-size:28px;font-weight:800;margin-bottom:8px">Check Your Email</div>
+      <div style="font-size:14px;color:var(--text2);margin-bottom:8px;line-height:1.6">We sent a verification link to:</div>
+      <div id="otp-phone-display" class="color-green fw-900" style="font-size:16px;margin-bottom:24px"></div>
+      <div style="font-size:14px;color:var(--text2);margin-bottom:32px;line-height:1.8">
+        1. Open your email inbox<br/>
+        2. Click the <strong style="color:var(--green)">Confirm your email</strong> link<br/>
+        3. Come back and login below
       </div>
-      <button class="btn btn-green" id="otp-btn" onclick="handleOTP()">Verify & Activate</button>
-      <div style="margin-top:20px;font-size:14px;color:var(--text2)">Didn't receive code? <span class="link" id="resend-btn" onclick="resendOTP()">Resend Code</span></div>
-      
+      <button class="btn btn-green" onclick="showScreen('login')">Go to Login →</button>
+      <div style="margin-top:20px;font-size:13px;color:var(--text2)">Didn't receive email? Check your spam folder</div>
     </div>
   </div>
 
@@ -937,15 +933,10 @@ const SUPABASE_URL = 'https://qqsfokmcnkzrbltrtvvq.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_nwtcx_KcrZJ_9OFpkSYryA_4w2Y_vok';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const API = 'https://mpesa-backend-og0n.onrender.com';
+const API = 'https://mpesa-backend-production-3705.up.railway.app';
 let state = {
   user: null, token: null, balance: 0,
-  bets: [], transactions: [
-    { type:'deposit', icon:'💰', desc:'M-Pesa Deposit', amount:2000, date:'2026-06-10' },
-    { type:'win', icon:'🏆', desc:'Football Bet Win', amount:1500, date:'2026-06-10' },
-    { type:'bet', icon:'⚽', desc:'Arsenal vs Chelsea', amount:-500, date:'2026-06-09' },
-    { type:'withdrawal', icon:'📤', desc:'M-Pesa Withdrawal', amount:-1000, date:'2026-06-08' },
-  ],
+  bets: [], transactions: [],
   currentGame: null, prevScreen: 'main',
   // Aviator
   avGameState: 'idle', avInterval: null, avMult: 1.0, avStake: 0, avBetActive: false, avHistory: [1.23,4.56,2.11,1.05,8.72,3.40,1.01],
@@ -1232,14 +1223,22 @@ function placeBet() {
 }
 
 // ── Wallet ─────────────────────────────────────────────────────────────────────
-function renderWallet() {
+async function renderWallet() {
   updateBalances();
-  $('txn-list').innerHTML = state.transactions.map(t => `
-    <div class="txn-item">
-      <div class="txn-icon" style="background:${t.amount>0?'rgba(0,255,135,0.1)':'rgba(255,71,87,0.1)'}">${t.icon}</div>
-      <div><div class="txn-desc">${t.desc}</div><div class="txn-date">${t.date}</div></div>
-      <div class="txn-amount ${t.amount>0?'positive':'negative'}">${t.amount>0?'+':''}KSh ${Math.abs(t.amount).toLocaleString()}</div>
-    </div>`).join('');
+  $('txn-list').innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px">Loading...</div>';
+  if (state.user?.id) {
+    const { data: txns } = await sb.from('transactions').select('*').eq('user_id', state.user.id).order('created_at', { ascending: false }).limit(20);
+    if (txns && txns.length > 0) {
+      $('txn-list').innerHTML = txns.map(t => `
+        <div class="txn-item">
+          <div class="txn-icon" style="background:${t.amount>0?'rgba(0,255,135,0.1)':'rgba(255,71,87,0.1)'}">${t.amount>0?'💰':'📤'}</div>
+          <div><div class="txn-desc">${t.description}</div><div class="txn-date">${t.created_at?.split('T')[0]}</div></div>
+          <div class="txn-amount ${t.amount>0?'positive':'negative'}">${t.amount>0?'+':''}KSh ${Math.abs(t.amount).toLocaleString()}</div>
+        </div>`).join('');
+    } else {
+      $('txn-list').innerHTML = '<div style="text-align:center;color:var(--text2);padding:40px">No transactions yet</div>';
+    }
+  }
 }
 function openDepositModal() { $('deposit-modal').classList.remove('hidden'); }
 function closeDepositModal() { $('deposit-modal').classList.add('hidden'); }
