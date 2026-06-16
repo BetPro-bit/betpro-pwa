@@ -426,6 +426,10 @@
           </div>
         </div>
         <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input class="form-input" id="login-email" type="email" placeholder="your@email.com"/>
+        </div>
+        <div class="form-group">
           <label class="form-label">Password</label>
           <div class="input-wrap">
             <input class="form-input" id="login-password" type="password" placeholder="Enter password"/>
@@ -1119,13 +1123,12 @@ function closeGame() { showScreen('main'); updateBalances(); }
 // ── Auth ───────────────────────────────────────────────────────────────────────
 async function handleLogin() {
   const phone = $('login-phone').value.trim();
+  const loginEmail = $('login-email').value.trim();
   const password = $('login-password').value;
-  if (!phone) { showToast('Enter your phone number', 'error'); return; }
+  if (!loginEmail || !loginEmail.includes('@')) { showToast('Enter your email address', 'error'); return; }
   if (!password) { showToast('Enter your password', 'error'); return; }
   setLoading('login-btn', true);
-  // Use email format for Supabase auth (phone@betpro.app)
-  const email = phone.replace(/^0/, '254') + '@betpro.app';
-  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  const { data, error } = await sb.auth.signInWithPassword({ email: loginEmail, password });
   if (error) {
     showToast('Invalid phone or password', 'error');
   } else {
@@ -1160,10 +1163,10 @@ async function handleRegister() {
   if (!state.terms) { showToast('Accept Terms & Conditions', 'error'); return; }
   setLoading('reg-btn', true);
   // Use phone-based email for Supabase
-  const sbEmail = phone.replace(/^0/, '254') + '@betpro.app';
+  const sbEmail = email; // Use real email for Supabase auth so verification emails work
   const { data, error } = await sb.auth.signUp({
     email: sbEmail, password,
-    options: { data: { phone: state.country.dial + phone, real_email: email, country: state.country.code } }
+    options: { data: { phone: state.country.dial + phone, country: state.country.code } }
   });
   if (error) {
     showToast(error.message || 'Registration failed', 'error');
@@ -1679,19 +1682,19 @@ function plinkoDrop() {
 
 // ── Forgot Password ────────────────────────────────────────────────────────────
 async function handleForgotPassword() {
-  const phone = $('login-phone').value.trim();
-  if (!phone || phone.length < 9) {
-    showToast('Enter your phone number first, then click Forgot Password', 'error');
+  const prefill = $('login-email')?.value.trim() || '';
+  const email = prompt('Enter the email address you used when registering:', prefill);
+  if (!email || !email.includes('@')) {
+    showToast('Please enter a valid email address', 'error');
     return;
   }
-  const email = phone.replace(/^0/, '254') + '@betpro.app';
   const { error } = await sb.auth.resetPasswordForEmail(email, {
     redirectTo: 'https://betpro-bit.github.io/betpro-pwa/'
   });
   if (error) {
-    showToast('Could not send reset email. Check your phone number.', 'error');
+    showToast('Could not send reset email. Check your email address.', 'error');
   } else {
-    showToast('✅ Password reset link sent to your email! Check your inbox.');
+    showToast('✅ Password reset link sent! Check your email inbox.');
   }
 }
 
