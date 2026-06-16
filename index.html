@@ -1385,15 +1385,26 @@ async function handleWithdraw() {
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.token},
       body: JSON.stringify({ phone:'254'+phone.replace(/^0/,''), amount })
     });
-    state.balance -= amount;
-    state.transactions.unshift({ type:'withdrawal', icon:'📤', desc:'M-Pesa Withdrawal', amount:-amount, date:new Date().toISOString().split('T')[0] });
-    closeWithdrawModal(); updateBalances(); renderWallet();
-    showToast(`✅ KSh ${amount} sent to +254${phone}!`);
+    const data = await res.json();
+    if (data.success) {
+      // Deduct from Supabase balance
+      state.balance -= amount;
+      await saveUserBalance();
+      // Save transaction to Supabase
+      await sb.from('transactions').insert({
+        user_id: state.user.id,
+        amount: -amount,
+        description: `M-Pesa Withdrawal to +254${phone.replace(/^0/,'')}`,
+        status: 'completed',
+        created_at: new Date()
+      });
+      closeWithdrawModal(); updateBalances(); renderWallet();
+      showToast(`✅ KSh ${amount.toLocaleString()} sent to +254${phone.replace(/^0/,'')}!`);
+    } else {
+      showToast(data.error || 'Withdrawal failed. Try again.', 'error');
+    }
   } catch(e) {
-    state.balance -= amount;
-    state.transactions.unshift({ type:'withdrawal', icon:'📤', desc:'M-Pesa Withdrawal', amount:-amount, date:new Date().toISOString().split('T')[0] });
-    closeWithdrawModal(); updateBalances(); renderWallet();
-    showToast(`✅ KSh ${amount} sent to +254${phone}!`);
+    showToast('Withdrawal failed. Check your connection.', 'error');
   }
   setLoading('with-btn', false, '📤 Withdraw Now');
 }
