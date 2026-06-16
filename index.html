@@ -180,6 +180,13 @@
   /* Modal */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 300; display: flex; align-items: flex-end; justify-content: center; }
   .modal-overlay.hidden { display: none; }
+  .chat-msg { display: flex; flex-direction: column; }
+  .chat-msg.user { align-items: flex-end; }
+  .chat-msg.support { align-items: flex-start; }
+  .chat-bubble { padding: 10px 14px; border-radius: 16px; font-size: 14px; max-width: 80%; line-height: 1.5; }
+  .support-bubble { background: var(--bg3); color: var(--text); border-bottom-left-radius: 4px; }
+  .user-bubble { background: var(--green); color: #000; border-bottom-right-radius: 4px; }
+  .chat-time { font-size: 11px; color: var(--text3); margin-top: 4px; }
   .modal { background: var(--bg2); border-radius: 20px 20px 0 0; padding: 24px; padding-bottom: 40px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
   .modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 16px; }
   .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
@@ -649,15 +656,83 @@
         <div class="menu-list mt-16">
           <div class="menu-item" onclick="alert('Coming soon!')"><span class="menu-icon">📊</span><span class="menu-label">Betting History</span><span class="menu-arrow">›</span></div>
           <div class="menu-item" onclick="switchTab('wallet')"><span class="menu-icon">💰</span><span class="menu-label">Deposit & Withdrawal</span><span class="menu-arrow">›</span></div>
-          <div class="menu-item" onclick="alert('Coming soon!')"><span class="menu-icon">🔐</span><span class="menu-label">Change Password</span><span class="menu-arrow">›</span></div>
-          <div class="menu-item" onclick="alert('Coming soon!')"><span class="menu-icon">🛡️</span><span class="menu-label">Responsible Gaming</span><span class="menu-arrow">›</span></div>
+          <div class="menu-item" onclick="openChangePassword()"><span class="menu-icon">🔐</span><span class="menu-label">Change Password</span><span class="menu-arrow">›</span></div>
+          <div class="menu-item" onclick="openResponsibleGaming()"><span class="menu-icon">🛡️</span><span class="menu-label">Responsible Gaming</span><span class="menu-arrow">›</span></div>
           <div class="menu-item" onclick="alert('Coming soon!')"><span class="menu-icon">🔔</span><span class="menu-label">Notifications</span><span class="menu-arrow">›</span></div>
-          <div class="menu-item" onclick="alert('Support: support@betpro.com')"><span class="menu-icon">💬</span><span class="menu-label">Support Chat</span><span class="menu-arrow">›</span></div>
+          <div class="menu-item" onclick="openSupportChat()"><span class="menu-icon">💬</span><span class="menu-label">Support Chat</span><span class="menu-arrow">›</span></div>
           <div class="menu-item logout" onclick="handleLogout()"><span class="menu-icon">🚪</span><span class="menu-label">Sign Out</span><span class="menu-arrow">›</span></div>
         </div>
         <div style="text-align:center;color:var(--text3);font-size:12px;padding:16px">BetPro v1.0.0 • support@betpro.com<br/>Please bet responsibly. 18+ only.</div>
       </div>
     </div>
+
+<!-- Change Password Modal -->
+<div class="modal-overlay hidden" id="change-password-modal" onclick="if(event.target===this)closeChangePassword()">
+  <div class="modal-box">
+    <div class="modal-header"><span class="modal-title">🔐 Change Password</span><button class="modal-close" onclick="closeChangePassword()">✕</button></div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
+      <div>
+        <label class="form-label">Current Password</label>
+        <div class="input-wrap"><input class="form-input" id="cp-current" type="password" placeholder="Enter current password"/><button class="eye-btn" onclick="togglePass('cp-current',this)">👁</button></div>
+      </div>
+      <div>
+        <label class="form-label">New Password</label>
+        <div class="input-wrap"><input class="form-input" id="cp-new" type="password" placeholder="Min 8 characters"/><button class="eye-btn" onclick="togglePass('cp-new',this)">👁</button></div>
+      </div>
+      <div>
+        <label class="form-label">Confirm New Password</label>
+        <input class="form-input" id="cp-confirm" type="password" placeholder="Repeat new password"/>
+      </div>
+      <button class="btn btn-green" id="cp-btn" onclick="handleChangePassword()">Update Password</button>
+    </div>
+  </div>
+</div>
+
+<!-- Responsible Gaming Modal -->
+<div class="modal-overlay hidden" id="responsible-gaming-modal" onclick="if(event.target===this)closeResponsibleGaming()">
+  <div class="modal-box">
+    <div class="modal-header"><span class="modal-title">🛡️ Responsible Gaming</span><button class="modal-close" onclick="closeResponsibleGaming()">✕</button></div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
+      <div style="background:rgba(0,255,135,0.05);border:1px solid var(--border2);border-radius:12px;padding:16px;font-size:13px;color:var(--text2);line-height:1.8">
+        🎯 <strong style="color:var(--text)">Set Daily Deposit Limit</strong><br/>
+        Control how much you can deposit per day.
+      </div>
+      <div>
+        <label class="form-label">Daily Deposit Limit (KSh)</label>
+        <input class="form-input" id="rg-limit" type="number" placeholder="e.g. 1000" min="100"/>
+      </div>
+      <button class="btn btn-green" onclick="setDepositLimit()">Set Limit</button>
+      <div style="border-top:1px solid var(--border);padding-top:16px">
+        <div style="font-size:13px;color:var(--text2);margin-bottom:12px">⏸️ <strong style="color:var(--text)">Self Exclusion</strong> — Take a break from betting</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" style="flex:1;background:var(--bg3);font-size:12px" onclick="selfExclude(1)">1 Day</button>
+          <button class="btn" style="flex:1;background:var(--bg3);font-size:12px" onclick="selfExclude(7)">1 Week</button>
+          <button class="btn" style="flex:1;background:var(--bg3);font-size:12px" onclick="selfExclude(30)">1 Month</button>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text3);text-align:center;line-height:1.6">
+        🆘 Need help? Call <strong>0800 723 253</strong> (Free helpline)<br/>Gambling should be fun. Play responsibly. 18+ only.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Support Chat Modal -->
+<div class="modal-overlay hidden" id="support-chat-modal" onclick="if(event.target===this)closeSupportChat()">
+  <div class="modal-box" style="height:80vh;display:flex;flex-direction:column">
+    <div class="modal-header"><span class="modal-title">💬 Support Chat</span><button class="modal-close" onclick="closeSupportChat()">✕</button></div>
+    <div id="chat-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px">
+      <div class="chat-msg support">
+        <div class="chat-bubble support-bubble">👋 Hi! Welcome to BetPro Support. How can we help you today?</div>
+        <div class="chat-time">Support</div>
+      </div>
+    </div>
+    <div style="padding:12px;border-top:1px solid var(--border);display:flex;gap:8px">
+      <input class="form-input" id="chat-input" placeholder="Type your message..." style="flex:1" onkeypress="if(event.key==='Enter')sendChatMessage()"/>
+      <button class="btn btn-green" style="width:48px;padding:0" onclick="sendChatMessage()">➤</button>
+    </div>
+  </div>
+</div>
 
     <!-- TAB BAR -->
     <div class="tab-bar">
@@ -1600,6 +1675,95 @@ function plinkoDrop() {
     updateGameBalances(); updateBalances();
     showToast(b.m>=1?`🎉 ${b.m}x — Won KSh ${win}!`:`😔 ${b.m}x — Lost`);
   }, 1500);
+}
+
+// ── Change Password ────────────────────────────────────────────────────────────
+function openChangePassword() { $('change-password-modal').classList.remove('hidden'); }
+function closeChangePassword() { $('change-password-modal').classList.add('hidden'); }
+
+async function handleChangePassword() {
+  const current = $('cp-current').value;
+  const newPass = $('cp-new').value;
+  const confirm = $('cp-confirm').value;
+  if (!current || !newPass || !confirm) { showToast('Fill all fields', 'error'); return; }
+  if (newPass.length < 8) { showToast('New password must be 8+ characters', 'error'); return; }
+  if (newPass !== confirm) { showToast('Passwords do not match', 'error'); return; }
+  setLoading('cp-btn', true);
+  // Re-authenticate first
+  const email = state.user?.phone?.replace(/^\+?254/, '254') + '@betpro.app' || '';
+  const { error: loginError } = await sb.auth.signInWithPassword({ email, password: current });
+  if (loginError) { showToast('Current password is incorrect', 'error'); setLoading('cp-btn', false, 'Update Password'); return; }
+  const { error } = await sb.auth.updateUser({ password: newPass });
+  if (error) {
+    showToast('Failed to update password', 'error');
+  } else {
+    showToast('Password updated successfully! ✅');
+    closeChangePassword();
+    $('cp-current').value = ''; $('cp-new').value = ''; $('cp-confirm').value = '';
+  }
+  setLoading('cp-btn', false, 'Update Password');
+}
+
+// ── Responsible Gaming ─────────────────────────────────────────────────────────
+function openResponsibleGaming() { $('responsible-gaming-modal').classList.remove('hidden'); }
+function closeResponsibleGaming() { $('responsible-gaming-modal').classList.add('hidden'); }
+
+async function setDepositLimit() {
+  const limit = parseInt($('rg-limit').value);
+  if (!limit || limit < 100) { showToast('Minimum limit is KSh 100', 'error'); return; }
+  await sb.from('users').update({ daily_limit: limit }).eq('id', state.user.id);
+  showToast(`Daily deposit limit set to KSh ${limit.toLocaleString()} ✅`);
+  closeResponsibleGaming();
+}
+
+async function selfExclude(days) {
+  if (!confirm(`Are you sure you want to exclude yourself for ${days} day(s)? You won't be able to login during this period.`)) return;
+  const until = new Date();
+  until.setDate(until.getDate() + days);
+  await sb.from('users').update({ excluded_until: until.toISOString() }).eq('id', state.user.id);
+  showToast(`Self exclusion activated for ${days} day(s)`);
+  await sb.auth.signOut();
+  state.token = null; state.user = null; state.balance = 0;
+  localStorage.clear(); showScreen('login');
+}
+
+// ── Support Chat ───────────────────────────────────────────────────────────────
+const supportReplies = [
+  "Thank you for reaching out! Our team will respond shortly. For urgent issues call +254 700 000 000.",
+  "We've received your message. Expected response time is under 2 hours.",
+  "For deposit issues, please ensure your M-Pesa is active and has sufficient funds.",
+  "For withdrawal delays, please allow up to 24 hours for processing.",
+  "You can also reach us at support@betpro.com for detailed queries.",
+];
+let replyIndex = 0;
+
+function openSupportChat() { $('support-chat-modal').classList.remove('hidden'); }
+function closeSupportChat() { $('support-chat-modal').classList.add('hidden'); }
+
+function sendChatMessage() {
+  const input = $('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  const messages = $('chat-messages');
+  // Add user message
+  messages.innerHTML += `
+    <div class="chat-msg user">
+      <div class="chat-bubble user-bubble">${msg}</div>
+      <div class="chat-time">You</div>
+    </div>`;
+  input.value = '';
+  messages.scrollTop = messages.scrollHeight;
+  // Auto reply after 1 second
+  setTimeout(() => {
+    const reply = supportReplies[replyIndex % supportReplies.length];
+    replyIndex++;
+    messages.innerHTML += `
+      <div class="chat-msg support">
+        <div class="chat-bubble support-bubble">🤖 ${reply}</div>
+        <div class="chat-time">Support</div>
+      </div>`;
+    messages.scrollTop = messages.scrollHeight;
+  }, 1000);
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────────
