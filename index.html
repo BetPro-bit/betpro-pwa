@@ -432,7 +432,7 @@
             <button class="eye-btn" onclick="togglePass('login-password',this)">👁</button>
           </div>
         </div>
-        <div class="forgot-link">Forgot Password?</div>
+        <div class="forgot-link" onclick="handleForgotPassword()">Forgot Password?</div>
         <button class="btn btn-green" id="login-btn" onclick="handleLogin()">Sign In →</button>
         <div class="divider"><div class="divider-line"></div><span class="divider-text">or</span><div class="divider-line"></div></div>
         <div class="text-center text-sm">Don't have an account? <span class="link" onclick="showScreen('register')">Register Free</span></div>
@@ -1675,6 +1675,24 @@ function plinkoDrop() {
     updateGameBalances(); updateBalances();
     showToast(b.m>=1?`🎉 ${b.m}x — Won KSh ${win}!`:`😔 ${b.m}x — Lost`);
   }, 1500);
+}
+
+// ── Forgot Password ────────────────────────────────────────────────────────────
+async function handleForgotPassword() {
+  const phone = $('login-phone').value.trim();
+  if (!phone || phone.length < 9) {
+    showToast('Enter your phone number first, then click Forgot Password', 'error');
+    return;
+  }
+  const email = phone.replace(/^0/, '254') + '@betpro.app';
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://betpro-bit.github.io/betpro-pwa/'
+  });
+  if (error) {
+    showToast('Could not send reset email. Check your phone number.', 'error');
+  } else {
+    showToast('✅ Password reset link sent to your email! Check your inbox.');
+  }
 }
 
 // ── Change Password ────────────────────────────────────────────────────────────
