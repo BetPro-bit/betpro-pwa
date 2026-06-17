@@ -1214,7 +1214,7 @@ async function handleLogin() {
   if (!password) { showToast('Enter your password', 'error'); return; }
   setLoading('login-btn', true);
 
-  // Try multiple phone formats to find the user
+  // Try multiple phone formats to find the user email
   const formats = [
     phone,
     '0' + phone.replace(/^0/, ''),
@@ -1222,21 +1222,32 @@ async function handleLogin() {
     '254' + phone.replace(/^0/, ''),
   ];
 
-  let userData = null;
+  let loginEmail = null;
   try {
     for (const fmt of formats) {
       const { data } = await sb.from('users').select('email').eq('phone', fmt).limit(1);
-      if (data && data.length > 0 && data[0].email) { userData = data[0]; break; }
+      if (data && data.length > 0 && data[0].email) { loginEmail = data[0].email; break; }
     }
   } catch(e) { console.log('Phone lookup error:', e); }
 
-  if (!userData?.email) {
-    showToast('Phone number not registered. Please sign up first.', 'error');
-    setLoading('login-btn', false, 'Sign In →');
-    return;
+  // If not found in users table, try phone-based email format as fallback
+  if (!loginEmail) {
+    loginEmail = phone.replace(/^0/, '254') + '@betpro.app';
   }
 
-  const { data, error } = await sb.auth.signInWithPassword({ email: userData.email, password });
+  const { data, error } = await sb.auth.signInWithPassword({ email: loginEmail, password });
+  if (error) {
+    showToast('Invalid phone or password', 'error');
+  } else {
+    state.token = data.session.access_token;
+    state.user = { phone: '+254' + phone.replace(/^0/, ''), id: data.user.id };
+    await loadUserBalance(data.user.id);
+    saveSession(); showScreen('main'); updateBalances();
+    fetchRealMatches();
+    showToast('Welcome back! 🎉');
+  }
+  setLoading('login-btn', false, 'Sign In →');
+}
   if (error) {
     showToast('Invalid phone or password', 'error');
   } else {
