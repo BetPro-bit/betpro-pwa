@@ -567,11 +567,8 @@
         <div class="stat-card"><div class="stat-val">98%</div><div class="stat-label">Payout Rate</div></div>
       </div>
       <div class="section mt-16">
-        <div class="section-header"><div class="section-title">🏆 Recent Winners</div></div>
-        <div class="winner-item"><div class="winner-avatar">J</div><div><div class="winner-name">James K.</div><div class="winner-game">Aviator</div></div><div class="winner-amount">KSh 48,200</div></div>
-        <div class="winner-item"><div class="winner-avatar">M</div><div><div class="winner-name">Mary W.</div><div class="winner-game">Football</div></div><div class="winner-amount">KSh 12,500</div></div>
-        <div class="winner-item"><div class="winner-avatar">A</div><div><div class="winner-name">Ali M.</div><div class="winner-game">Mines</div></div><div class="winner-amount">KSh 8,750</div></div>
-        <div class="winner-item"><div class="winner-avatar">G</div><div><div class="winner-name">Grace N.</div><div class="winner-game">Wheel</div></div><div class="winner-amount">KSh 25,000</div></div>
+        <div class="section-header"><div class="section-title">⚽ Live & Upcoming Matches</div><div class="section-action" onclick="switchTab('sports')">See All</div></div>
+        <div id="home-matches-list"><div style="text-align:center;color:var(--text2);padding:20px">Loading matches...</div></div>
       </div>
       <div class="promo-card">
         <div class="promo-tag">WELCOME BONUS</div>
@@ -1046,11 +1043,48 @@ let liveMatches = [];
 async function fetchRealMatches() {
   $('matches-list').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)"><span class="spinner"></span> Loading matches...</div>';
   try {
-    // Fetch through backend proxy to avoid CORS issues
     const res = await fetch(`${API}/api/football/matches`);
     const data = await res.json();
     if (!data.success || !data.matches || data.matches.length === 0) throw new Error('No matches');
     liveMatches = data.matches.map(m => ({
+      id: m.id,
+      league: m.competition.name,
+      home: m.homeTeam.shortName || m.homeTeam.name,
+      away: m.awayTeam.shortName || m.awayTeam.name,
+      time: formatMatchTime(m),
+      score: m.score?.fullTime ? `${m.score.fullTime.home ?? '-'}-${m.score.fullTime.away ?? '-'}` : null,
+      live: m.status === 'IN_PLAY' || m.status === 'PAUSED',
+      odds: generateOdds()
+    }));
+    renderMatches(liveMatches);
+    renderHomeMatches(liveMatches.slice(0, 3));
+  } catch(e) {
+    liveMatches = getDemoMatches();
+    renderMatches(liveMatches);
+    renderHomeMatches(liveMatches.slice(0, 3));
+  }
+}
+
+function renderHomeMatches(matches) {
+  const el = document.getElementById('home-matches-list');
+  if (!el) return;
+  el.innerHTML = matches.map(m => `
+    <div class="match-card" onclick="switchTab('sports')" style="cursor:pointer">
+      <div class="match-header">
+        <span class="league-name">⚽ ${m.league}</span>
+        <span>${m.live ? '<span class="live-badge">LIVE</span>' : ''}<span class="match-time">${m.time}</span></span>
+      </div>
+      <div class="teams-row">
+        <div class="team-name">${m.home}</div>
+        <div class="score-box"><div class="score-text">${m.score || 'vs'}</div></div>
+        <div class="team-name" style="text-align:right">${m.away}</div>
+      </div>
+      <div class="odds-row">
+        ${[['1',m.odds[0]],['X',m.odds[1]],['2',m.odds[2]]].map(([l,o]) => `
+          <div class="odd-btn"><div class="odd-label">${l}</div><div class="odd-value">${o}</div></div>`).join('')}
+      </div>
+    </div>`).join('');
+}
       id: m.id,
       league: m.competition.name,
       home: m.homeTeam.shortName || m.homeTeam.name,
@@ -1154,6 +1188,7 @@ function switchTab(tab) {
     $('tab-' + t).classList.toggle('hidden', t !== tab);
     const tb = $('tabbar-' + t); if (tb) tb.classList.toggle('active', t === tab);
   });
+  if (tab === 'home') fetchRealMatches();
   if (tab === 'sports') { renderSports(); fetchRealMatches(); }
   if (tab === 'wallet') renderWallet();
   if (tab === 'profile') renderProfile();
