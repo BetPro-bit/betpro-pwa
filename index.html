@@ -1181,10 +1181,27 @@ async function handleLogin() {
   if (!phone) { showToast('Enter your phone number', 'error'); return; }
   if (!password) { showToast('Enter your password', 'error'); return; }
   setLoading('login-btn', true);
-  // Look up real email from users table using phone number
-  const fullPhone = state.country.dial + phone.replace(/^0/, '');
-  const { data: userData } = await sb.from('users').select('email').eq('phone', fullPhone).single();
-  if (!userData?.email) { showToast('Phone number not registered', 'error'); setLoading('login-btn', false, 'Sign In →'); return; }
+
+  // Try multiple phone formats to find the user
+  const formats = [
+    phone,                           // as typed: 712345678
+    '0' + phone,                     // 0712345678
+    '+254' + phone.replace(/^0/,''), // +254712345678
+    '254' + phone.replace(/^0/,''),  // 254712345678
+  ];
+
+  let userData = null;
+  for (const fmt of formats) {
+    const { data } = await sb.from('users').select('email').eq('phone', fmt).single();
+    if (data?.email) { userData = data; break; }
+  }
+
+  if (!userData?.email) {
+    showToast('Phone number not registered. Please sign up first.', 'error');
+    setLoading('login-btn', false, 'Sign In →');
+    return;
+  }
+
   const { data, error } = await sb.auth.signInWithPassword({ email: userData.email, password });
   if (error) {
     showToast('Invalid phone or password', 'error');
