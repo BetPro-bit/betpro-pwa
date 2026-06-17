@@ -28,8 +28,9 @@
   
   /* Layout */
   .app { display: flex; flex-direction: column; min-height: 100vh; max-width: 480px; margin: 0 auto; position: relative; }
-  .screen { display: none; flex: 1; flex-direction: column; }
+  .screen { display: none; flex: 1; flex-direction: column; position: relative; z-index: 1; }
   .screen.active { display: flex; }
+  #screen-login, #screen-register, #screen-otp { z-index: 400; }
   
   /* Auth screens */
   .auth-wrap { flex: 1; padding: 24px; padding-top: 48px; overflow-y: auto; background: linear-gradient(180deg, #0d2018 0%, var(--bg) 100%); }
@@ -48,7 +49,7 @@
   .form-input:focus { border-color: var(--green); }
   .form-input::placeholder { color: var(--text3); }
   .phone-row { display: flex; }
-  .dial-code { background: var(--bg3); border: 1px solid var(--border); border-right: none; padding: 13px 12px; border-radius: var(--radius-sm) 0 0 var(--radius-sm); font-size: 14px; white-space: nowrap; display: flex; align-items: center; }
+  .dial-code { background: var(--bg3); border: 1px solid var(--border); border-right: none; padding: 13px 12px; border-radius: var(--radius-sm) 0 0 var(--radius-sm); font-size: 14px; white-space: nowrap; display: flex; align-items: center; pointer-events: none; user-select: none; }
   .phone-row .form-input { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
   
   /* Buttons */
@@ -179,7 +180,7 @@
   
   /* Modal */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 300; display: flex; align-items: flex-end; justify-content: center; }
-  .modal-overlay.hidden { display: none; }
+  .modal-overlay.hidden { display: none !important; pointer-events: none !important; visibility: hidden !important; }
   .chat-msg { display: flex; flex-direction: column; }
   .chat-msg.user { align-items: flex-end; }
   .chat-msg.support { align-items: flex-start; }
@@ -1006,7 +1007,7 @@ const SUPABASE_URL = 'https://qqsfokmcnkzrbltrtvvq.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_nwtcx_KcrZJ_9OFpkSYryA_4w2Y_vok';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const API = 'https://mpesa-backend-production-3705.up.railway.app';
+const API = 'https://mpesa-backend-og0n.onrender.com';
 let state = {
   user: null, token: null, balance: 0,
   bets: [], transactions: [],
