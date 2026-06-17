@@ -1216,17 +1216,19 @@ async function handleLogin() {
 
   // Try multiple phone formats to find the user
   const formats = [
-    phone,                           // as typed: 712345678
-    '0' + phone,                     // 0712345678
-    '+254' + phone.replace(/^0/,''), // +254712345678
-    '254' + phone.replace(/^0/,''),  // 254712345678
+    phone,
+    '0' + phone.replace(/^0/, ''),
+    '+254' + phone.replace(/^0/, ''),
+    '254' + phone.replace(/^0/, ''),
   ];
 
   let userData = null;
-  for (const fmt of formats) {
-    const { data } = await sb.from('users').select('email').eq('phone', fmt).single();
-    if (data?.email) { userData = data; break; }
-  }
+  try {
+    for (const fmt of formats) {
+      const { data } = await sb.from('users').select('email').eq('phone', fmt).limit(1);
+      if (data && data.length > 0 && data[0].email) { userData = data[0]; break; }
+    }
+  } catch(e) { console.log('Phone lookup error:', e); }
 
   if (!userData?.email) {
     showToast('Phone number not registered. Please sign up first.', 'error');
@@ -1242,6 +1244,7 @@ async function handleLogin() {
     state.user = { phone: phone.replace(/^0/, '+254'), id: data.user.id };
     await loadUserBalance(data.user.id);
     saveSession(); showScreen('main'); updateBalances();
+    fetchRealMatches();
     showToast('Welcome back! 🎉');
   }
   setLoading('login-btn', false, 'Sign In →');
