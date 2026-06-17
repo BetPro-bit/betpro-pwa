@@ -1046,13 +1046,10 @@ let liveMatches = [];
 async function fetchRealMatches() {
   $('matches-list').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)"><span class="spinner"></span> Loading matches...</div>';
   try {
-    // Fetch matches from multiple leagues
-    const leagueIds = Object.values(LEAGUE_IDS).join(',');
-    const res = await fetch(`${FOOTBALL_API}/matches?competitions=${leagueIds}&status=LIVE,SCHEDULED,TIMED`, {
-      headers: { 'X-Auth-Token': FOOTBALL_API_KEY }
-    });
+    // Fetch through backend proxy to avoid CORS issues
+    const res = await fetch(`${API}/api/football/matches`);
     const data = await res.json();
-    if (!data.matches || data.matches.length === 0) throw new Error('No matches');
+    if (!data.success || !data.matches || data.matches.length === 0) throw new Error('No matches');
     liveMatches = data.matches.map(m => ({
       id: m.id,
       league: m.competition.name,
