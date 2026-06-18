@@ -1200,8 +1200,11 @@ function renderHomeMatches(matches) {
     el.innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px">No upcoming matches</div>';
     return;
   }
-  el.innerHTML = matches.map(m => `
-    <div class="match-card" onclick="switchTab('sports')" style="cursor:pointer">
+  el.innerHTML = matches.map(m => {
+    const o = m.odds;
+    const matchLabel = m.home + ' vs ' + m.away;
+    return `
+    <div class="match-card">
       <div class="match-header">
         <span class="league-name">${m.leagueFlag} ${m.league}</span>
         <span>${m.live ? '<span class="live-badge">LIVE</span>' : ''}<span class="match-time">${m.time}</span></span>
@@ -1211,11 +1214,17 @@ function renderHomeMatches(matches) {
         <div class="score-box"><div class="score-text">${m.score || 'vs'}</div>${m.live ? '<div class="score-label" style="color:var(--red)">LIVE</div>' : ''}</div>
         <div class="team-name" style="text-align:right">${m.away}</div>
       </div>
-      <div class="odds-row">
-        ${[['1 Home',m.odds[0]],['X Draw',m.odds[1]],['2 Away',m.odds[2]]].map(([l,o]) => `
-          <div class="odd-btn"><div class="odd-label">${l}</div><div class="odd-value">${o}</div></div>`).join('')}
+      <div style="display:flex;gap:4px;margin:8px 0 6px">
+        ${['1X2','Goals','Corners'].map(t => `<div onclick="setMatchTab(${m.id},'${t}');switchTab('sports')" style="flex:1;text-align:center;padding:5px 2px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;background:var(--bg3);color:var(--text2);border:1px solid var(--border)">${t}</div>`).join('')}
       </div>
-    </div>`).join('');
+      <div class="odds-row">
+        ${[['1 Home',o.home],['X Draw',o.draw],['2 Away',o.away]].map(([l,odd]) => `
+          <div class="odd-btn${isBetSelected(m.id,l)?' selected':''}" onclick="addBet(${m.id},'${matchLabel}','${l}',${odd})">
+            <div class="odd-label">${l}</div><div class="odd-value">${odd}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 const WHEEL_SEGMENTS = [
