@@ -437,7 +437,15 @@
             <button class="eye-btn" onclick="togglePass('login-password',this)">👁</button>
           </div>
         </div>
-        <div class="forgot-link" onclick="handleForgotPassword()">Forgot Password?</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="forgot-link" onclick="toggleEmailLogin()">Use email instead</div>
+          <div class="forgot-link" onclick="handleForgotPassword()">Forgot Password?</div>
+        </div>
+        <div id="email-login-group" class="form-group hidden">
+          <label class="form-label">Email Address</label>
+          <input class="form-input" id="login-email" type="email" placeholder="your@email.com"/>
+          <span style="font-size:11px;color:var(--text3)">Enter the email you registered with</span>
+        </div>
         <button class="btn btn-green" id="login-btn" onclick="handleLogin()">Sign In →</button>
         <div class="divider"><div class="divider-line"></div><span class="divider-text">or</span><div class="divider-line"></div></div>
         <div class="text-center text-sm">Don't have an account? <span class="link" onclick="showScreen('register')">Register Free</span></div>
@@ -1252,40 +1260,63 @@ function openGame(game) {
 function closeGame() { showScreen('main'); updateBalances(); }
 
 // ── Auth ───────────────────────────────────────────────────────────────────────
+function toggleEmailLogin() {
+  const grp = $('email-login-group');
+  grp.classList.toggle('hidden');
+  if (!grp.classList.contains('hidden')) $('login-email').focus();
+}
+
 async function handleLogin() {
-  const phone = $('login-phone').value.trim();
+  const rawPhone = $('login-phone').value.trim().replace(/\s+/g, '');
   const password = $('login-password').value;
-  if (!phone) { showToast('Enter your phone number', 'error'); return; }
+  if (!rawPhone) { showToast('Enter your phone number', 'error'); return; }
   if (!password) { showToast('Enter your password', 'error'); return; }
   setLoading('login-btn', true);
 
-  // Try multiple phone formats to find the user email
+  // Strip country code / leading zero -> bare 9 digits e.g. 729165092
+  const digits = rawPhone.replace(/^\+?254/, '').replace(/^0/, '');
+
+  // All phone formats we may have stored in the users table
   const formats = [
-    phone,
-    '0' + phone.replace(/^0/, ''),
-    '+254' + phone.replace(/^0/, ''),
-    '254' + phone.replace(/^0/, ''),
+    digits,           // 729165092
+    '0' + digits,     // 0729165092
+    '+254' + digits,  // +254729165092
+    '254' + digits,   // 254729165092
+    rawPhone,
   ];
 
-  let loginEmail = null;
-  try {
-    for (const fmt of formats) {
-      const { data } = await sb.from('users').select('email').eq('phone', fmt).limit(1);
-      if (data && data.length > 0 && data[0].email) { loginEmail = data[0].email; break; }
-    }
-  } catch(e) { console.log('Phone lookup error:', e); }
+  // If user typed their email directly in the optional email field, use it
+  const directEmail = $('login-email') ? $('login-email').value.trim() : '';
+  let loginEmail = directEmail || null;
 
-  // If not found in users table, try phone-based email format as fallback
   if (!loginEmail) {
-    loginEmail = phone.replace(/^0/, '254') + '@betpro.app';
+    try {
+      // Single query using .in() — much faster than looping
+      const { data: rows } = await sb
+        .from('users')
+        .select('email, phone')
+        .in('phone', formats)
+        .limit(1);
+      if (rows && rows.length > 0 && rows[0].email) {
+        loginEmail = rows[0].email;
+        console.log('Found email via phone lookup:', loginEmail);
+      }
+    } catch(e) { console.warn('Phone lookup error:', e); }
+  }
+
+  // Fallback for legacy accounts stored as 254XXXXXXXXX@betpro.app
+  if (!loginEmail) {
+    loginEmail = '254' + digits + '@betpro.app';
+    console.log('Using fallback email:', loginEmail);
   }
 
   const { data, error } = await sb.auth.signInWithPassword({ email: loginEmail, password });
   if (error) {
-    showToast('Invalid phone or password', 'error');
+    console.warn('Login failed:', error.message, '| email tried:', loginEmail);
+    showToast('Incorrect phone or password. If you just registered, check your email for the verification link first.', 'error', 5000);
   } else {
     state.token = data.session.access_token;
-    state.user = { phone: '+254' + phone.replace(/^0/, ''), id: data.user.id };
+    state.user = { phone: '+254' + digits, id: data.user.id };
     await loadUserBalance(data.user.id);
     saveSession(); showScreen('main'); updateBalances();
     fetchRealMatches();
@@ -1322,7 +1353,12 @@ async function handleRegister() {
     options: { data: { phone: state.country.dial + phone, country: state.country.code } }
   });
   if (error) {
-    showToast(error.message || 'Registration failed', 'error');
+    const msg = error.message || '';
+    if (msg.toLowerCase().includes('already') || msg.toLowerCase().includes('registered') || msg.toLowerCase().includes('exist')) {
+      showToast('This email is already registered. Please sign in instead.', 'error');
+    } else {
+      showToast(msg || 'Registration failed. Try again.', 'error');
+    }
   } else {
     if (data.user) {
       await sb.from('users').insert({ id: data.user.id, phone: state.country.dial + phone, email, balance: 0, country: state.country.code });
