@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
 <title>BetPro — Bet Smart. Win Big.</title>
 <link rel="icon" href="icons/icon-192.png"/>
 <link rel="apple-touch-icon" href="icons/icon-192.png"/>
@@ -538,16 +541,16 @@
           <div style="font-size:18px;cursor:pointer">🔔</div>
         </div>
       </div>
+      <div id="api-debug-bar" style="background:#1a2332;border-bottom:1px solid rgba(0,255,135,0.2);padding:6px 16px;font-size:11px;color:#8896a8;display:flex;justify-content:space-between;align-items:center">
+        <span id="api-debug-msg">⏳ Fetching matches...</span>
+        <span id="api-debug-time" style="color:#4a5568"></span>
+      </div>
       <div class="ticker">
         <div class="ticker-inner" id="ticker-inner">
-          <span class="ticker-text">⚽ Man City 2-1 Arsenal  LIVE 78'</span>
-          <span class="ticker-text">🏆 Jackpot: KSh 4,200,000</span>
-          <span class="ticker-text">⚽ Chelsea 0-0 Liverpool  LIVE 34'</span>
-          <span class="ticker-text">🎉 James won KSh 48,200!</span>
-          <span class="ticker-text">⚽ Man City 2-1 Arsenal  LIVE 78'</span>
-          <span class="ticker-text">🏆 Jackpot: KSh 4,200,000</span>
-          <span class="ticker-text">⚽ Chelsea 0-0 Liverpool  LIVE 34'</span>
-          <span class="ticker-text">🎉 James won KSh 48,200!</span>
+          <span class="ticker-text">⚽ Loading live matches...</span>
+          <span class="ticker-text">🏆 BetPro — Bet Smart. Win Big.</span>
+          <span class="ticker-text">⚽ Loading live matches...</span>
+          <span class="ticker-text">🏆 BetPro — Bet Smart. Win Big.</span>
         </div>
       </div>
       <div class="hero">
@@ -1106,61 +1109,64 @@ function getLeagueFlag(id) {
 async function fetchRealMatches() {
   const matchesList = $('matches-list');
   const homeList = $('home-matches-list');
+  const dbMsg = $('api-debug-msg');
+  const dbTime = $('api-debug-time');
   if (matchesList) matchesList.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)"><span class="spinner"></span> Loading matches...</div>';
   if (homeList) homeList.innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px"><span class="spinner"></span></div>';
+  if (dbMsg) dbMsg.textContent = '⏳ Fetching matches...';
 
+  let data, source = 'backend';
   try {
-    // Fetch today + next 3 days of matches across free competitions
-    const today = new Date();
-    const future = new Date(today); future.setDate(future.getDate() + 3);
-    const dateFrom = today.toISOString().split('T')[0];
-    const dateTo = future.toISOString().split('T')[0];
-
-    const res = await fetch(
-      `${FOOTBALL_API_BASE}/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`,
-      { headers: { 'X-Auth-Token': FOOTBALL_API_KEY } }
-    );
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || `API error ${res.status}`);
-    }
-
-    const data = await res.json();
-    const matches = data.matches || [];
-
-    if (matches.length === 0) throw new Error('No matches returned');
-
-    // Sort: LIVE first, then by date
-    matches.sort((a, b) => {
-      const liveA = a.status === 'IN_PLAY' || a.status === 'PAUSED';
-      const liveB = b.status === 'IN_PLAY' || b.status === 'PAUSED';
-      if (liveA && !liveB) return -1;
-      if (!liveA && liveB) return 1;
-      return new Date(a.utcDate) - new Date(b.utcDate);
-    });
-
-    liveMatches = matches.map(mapMatch);
-    renderMatches(liveMatches);
-    renderHomeMatches(liveMatches.slice(0, 5));
-    updateTicker();
-    // Refresh live scores every 60s
-    clearInterval(window._matchRefreshTimer);
-    window._matchRefreshTimer = setInterval(fetchRealMatches, 60000);
+    const res = await fetch(`${API}/api/matches/upcoming`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    data = await res.json();
+    console.log('✅ Matches from backend:', data.matches?.length, 'matches');
   } catch(e) {
-    console.warn('Football API error:', e.message);
-    // Show error with retry button instead of fake data
+    console.error('Backend fetch failed:', e.message);
+    if (dbMsg) dbMsg.innerHTML = `❌ Failed to load matches: ${e.message}`;
+    if (dbTime) dbTime.textContent = new Date().toLocaleTimeString();
     const errHtml = `
       <div style="text-align:center;padding:40px;color:var(--text2)">
         <div style="font-size:32px;margin-bottom:12px">⚽</div>
         <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px">Could not load matches</div>
-        <div style="font-size:13px;margin-bottom:16px">${e.message}</div>
-        <button class="btn btn-outline" style="width:auto;padding:10px 24px" onclick="fetchRealMatches()">Retry</button>
+        <div style="font-size:13px;margin-bottom:4px;color:var(--red)">${e.message}</div>
+        <div style="font-size:12px;margin-bottom:16px;color:var(--text3)">Check browser console (F12) for details</div>
+        <button class="btn btn-outline" style="width:auto;padding:10px 24px" onclick="fetchRealMatches()">↺ Retry</button>
       </div>`;
     if (matchesList) matchesList.innerHTML = errHtml;
     if (homeList) homeList.innerHTML = errHtml;
+    return;
   }
+
+  const matches = data.matches || [];
+  const now = new Date().toLocaleTimeString();
+  if (dbMsg) dbMsg.textContent = `✅ ${matches.length} matches loaded (${source})`;
+  if (dbTime) dbTime.textContent = now;
+
+  if (matches.length === 0) {
+    const msg = '<div style="text-align:center;color:var(--text2);padding:40px">No matches scheduled in the next 4 days</div>';
+    if (matchesList) matchesList.innerHTML = msg;
+    if (homeList) homeList.innerHTML = msg;
+    return;
+  }
+
+  matches.sort((a, b) => {
+    const liveA = a.status === 'IN_PLAY' || a.status === 'PAUSED';
+    const liveB = b.status === 'IN_PLAY' || b.status === 'PAUSED';
+    if (liveA && !liveB) return -1;
+    if (!liveA && liveB) return 1;
+    return new Date(a.utcDate) - new Date(b.utcDate);
+  });
+
+  liveMatches = matches.map(mapMatch);
+  renderMatches(liveMatches);
+  renderHomeMatches(liveMatches.slice(0, 5));
+  updateTicker();
+
+  clearInterval(window._matchRefreshTimer);
+  window._matchRefreshTimer = setInterval(fetchRealMatches, 60000);
 }
+
 
 function renderHomeMatches(matches) {
   const el = $('home-matches-list');
@@ -2032,6 +2038,7 @@ initCountryChips();
     state.user = { id: session.user.id, phone: session.user.user_metadata?.phone || '' };
     await loadUserBalance(session.user.id);
     showScreen('main'); updateBalances();
+    fetchRealMatches();
   } else {
     showScreen('login');
   }
