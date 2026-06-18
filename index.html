@@ -389,6 +389,9 @@
   .stake-input { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: var(--radius-sm); font-size: 15px; width: 120px; text-align: right; outline: none; }
   .stake-input:focus { border-color: var(--green); }
 
+  /* modal-box: used by profile sub-modals (same style as .modal) */
+  .modal-box { background: var(--bg2); border-radius: 20px 20px 0 0; padding: 24px; padding-bottom: 40px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
+
   .hidden { display: none !important; }
   .mt-8 { margin-top: 8px; }
   .mt-16 { margin-top: 16px; }
@@ -1086,22 +1089,6 @@ function renderHomeMatches(matches) {
       </div>
     </div>`).join('');
 }
-      id: m.id,
-      league: m.competition.name,
-      home: m.homeTeam.shortName || m.homeTeam.name,
-      away: m.awayTeam.shortName || m.awayTeam.name,
-      time: formatMatchTime(m),
-      score: m.score?.fullTime ? `${m.score.fullTime.home ?? '-'}-${m.score.fullTime.away ?? '-'}` : null,
-      live: m.status === 'IN_PLAY' || m.status === 'PAUSED',
-      odds: generateOdds()
-    }));
-    renderMatches(liveMatches);
-  } catch(e) {
-    // Fallback to demo matches if API fails
-    liveMatches = getDemoMatches();
-    renderMatches(liveMatches);
-  }
-}
 
 function formatMatchTime(m) {
   if (m.status === 'IN_PLAY') return `LIVE ${m.minute || ''}'`;
@@ -1242,18 +1229,6 @@ async function handleLogin() {
   } else {
     state.token = data.session.access_token;
     state.user = { phone: '+254' + phone.replace(/^0/, ''), id: data.user.id };
-    await loadUserBalance(data.user.id);
-    saveSession(); showScreen('main'); updateBalances();
-    fetchRealMatches();
-    showToast('Welcome back! 🎉');
-  }
-  setLoading('login-btn', false, 'Sign In →');
-}
-  if (error) {
-    showToast('Invalid phone or password', 'error');
-  } else {
-    state.token = data.session.access_token;
-    state.user = { phone: phone.replace(/^0/, '+254'), id: data.user.id };
     await loadUserBalance(data.user.id);
     saveSession(); showScreen('main'); updateBalances();
     fetchRealMatches();
