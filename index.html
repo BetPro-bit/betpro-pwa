@@ -1525,7 +1525,6 @@ function renderMatches(matches) {
         }).join(''));
 }
 function setMatchTab(matchId, tab) { matchMarketTab[matchId] = tab; renderMatches(); }
-}
 function isBetSelected(matchId, sel) { return state.bets.some(b => b.matchId===matchId && b.selection===sel); }
 function addBet(matchId, match, selection, odd) {
   const idx = state.bets.findIndex(b => b.matchId===matchId);
