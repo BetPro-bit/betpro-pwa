@@ -936,31 +936,77 @@
         <div class="modal-title">💳 Deposit via M-Pesa</div>
         <button class="modal-close" onclick="closeDepositModal()">✕</button>
       </div>
-      <div class="mpesa-badge">
-        <span style="font-size:28px">📱</span>
-        <div><div style="font-weight:700;font-size:14px">Lipa na M-Pesa</div><div style="color:var(--text2);font-size:12px">Instant deposit to your wallet</div></div>
-        <div class="instant-badge">Instant</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">M-Pesa Phone Number</label>
-        <div class="phone-row">
-          <div class="dial-code">🇰🇪 +254</div>
-          <input class="form-input" id="dep-phone" type="tel" placeholder="7XXXXXXXX" maxlength="9"/>
+
+      <!-- Payment method toggle -->
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <div id="method-stk" onclick="setDepositMethod('stk')" style="flex:1;padding:10px;border-radius:10px;border:2px solid var(--green);background:var(--green-glow);text-align:center;cursor:pointer">
+          <div style="font-size:18px">📱</div>
+          <div style="font-size:12px;font-weight:700;color:var(--green)">STK Push</div>
+          <div style="font-size:10px;color:var(--text2)">PIN prompt on phone</div>
+        </div>
+        <div id="method-paybill" onclick="setDepositMethod('paybill')" style="flex:1;padding:10px;border-radius:10px;border:2px solid var(--border);background:var(--bg3);text-align:center;cursor:pointer">
+          <div style="font-size:18px">🏦</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text2)">Paybill</div>
+          <div style="font-size:10px;color:var(--text2)">Pay manually via M-Pesa</div>
         </div>
       </div>
-      <div class="form-group mt-8">
-        <label class="form-label">Amount (KSh)</label>
-        <input class="form-input" id="dep-amount" type="number" placeholder="Min KSh 20"/>
+
+      <!-- STK Push section -->
+      <div id="stk-section">
+        <div class="form-group">
+          <label class="form-label">M-Pesa Phone Number</label>
+          <div class="phone-row">
+            <div class="dial-code">🇰🇪 +254</div>
+            <input class="form-input" id="dep-phone" type="tel" placeholder="7XXXXXXXX" maxlength="9"/>
+          </div>
+        </div>
+        <div class="form-group mt-8">
+          <label class="form-label">Amount (KSh)</label>
+          <input class="form-input" id="dep-amount" type="number" placeholder="Min KSh 20"/>
+        </div>
+        <div class="quick-amounts">
+          <button class="quick-btn" onclick="document.getElementById('dep-amount').value=100">KSh 100</button>
+          <button class="quick-btn" onclick="document.getElementById('dep-amount').value=500">KSh 500</button>
+          <button class="quick-btn" onclick="document.getElementById('dep-amount').value=1000">KSh 1,000</button>
+          <button class="quick-btn" onclick="document.getElementById('dep-amount').value=2000">KSh 2,000</button>
+          <button class="quick-btn" onclick="document.getElementById('dep-amount').value=5000">KSh 5,000</button>
+        </div>
+        <button class="btn btn-green mt-8" id="dep-btn" onclick="handleDeposit()">💳 Pay Now</button>
+        <div class="modal-note">You will receive an M-Pesa STK push. Enter your PIN to confirm.</div>
       </div>
-      <div class="quick-amounts">
-        <button class="quick-btn" onclick="document.getElementById('dep-amount').value=100">KSh 100</button>
-        <button class="quick-btn" onclick="document.getElementById('dep-amount').value=500">KSh 500</button>
-        <button class="quick-btn" onclick="document.getElementById('dep-amount').value=1000">KSh 1,000</button>
-        <button class="quick-btn" onclick="document.getElementById('dep-amount').value=2000">KSh 2,000</button>
-        <button class="quick-btn" onclick="document.getElementById('dep-amount').value=5000">KSh 5,000</button>
+
+      <!-- Paybill section -->
+      <div id="paybill-section" style="display:none">
+        <div style="background:var(--bg3);border-radius:12px;padding:16px;margin-bottom:16px">
+          <div style="font-size:12px;color:var(--text2);margin-bottom:12px;font-weight:600">Follow these steps on your phone:</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:24px;height:24px;border-radius:50%;background:var(--green);color:#000;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+              <span style="font-size:13px;color:var(--text)">Go to <strong>M-Pesa → Lipa na M-Pesa → Pay Bill</strong></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:24px;height:24px;border-radius:50%;background:var(--green);color:#000;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+              <span style="font-size:13px;color:var(--text)">Business No: <strong style="color:var(--green);font-size:15px">400200</strong></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:24px;height:24px;border-radius:50%;background:var(--green);color:#000;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
+              <span style="font-size:13px;color:var(--text)">Account No: <strong style="color:var(--green);font-size:15px" id="paybill-account">your phone</strong></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:24px;height:24px;border-radius:50%;background:var(--green);color:#000;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
+              <span style="font-size:13px;color:var(--text)">Enter amount & M-Pesa PIN</span>
+            </div>
+          </div>
+        </div>
+        <div style="background:rgba(0,255,135,0.08);border:1px solid var(--green);border-radius:10px;padding:12px;text-align:center;margin-bottom:16px">
+          <div style="font-size:11px;color:var(--text2);margin-bottom:4px">Your Account Reference</div>
+          <div style="font-size:20px;font-weight:800;color:var(--green);letter-spacing:2px" id="paybill-ref-display">—</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">Use this exact number as Account No</div>
+        </div>
+        <button class="btn btn-green" onclick="checkPaybillPayment()">✅ I've Paid — Check Now</button>
+        <div class="modal-note">Your balance will update automatically once payment is confirmed.</div>
       </div>
-      <button class="btn btn-green mt-8" id="dep-btn" onclick="handleDeposit()">💳 Pay Now</button>
-      <div class="modal-note">You will receive an M-Pesa STK push. Enter your PIN to confirm.</div>
+
     </div>
   </div>
 
@@ -1585,8 +1631,74 @@ async function renderWallet() {
     }
   }
 }
-function openDepositModal() { $('deposit-modal').classList.remove('hidden'); }
+const PAYBILL_NUMBER = '400200';
+const PAYBILL_STORE = '1172450';
+let depositMethod = 'stk';
+
+function setDepositMethod(method) {
+  depositMethod = method;
+  const stkEl = $('stk-section');
+  const pbEl = $('paybill-section');
+  const stkBtn = $('method-stk');
+  const pbBtn = $('method-paybill');
+  if (method === 'stk') {
+    stkEl.style.display = '';
+    pbEl.style.display = 'none';
+    stkBtn.style.border = '2px solid var(--green)';
+    stkBtn.style.background = 'var(--green-glow)';
+    stkBtn.querySelector('div:nth-child(2)').style.color = 'var(--green)';
+    pbBtn.style.border = '2px solid var(--border)';
+    pbBtn.style.background = 'var(--bg3)';
+    pbBtn.querySelector('div:nth-child(2)').style.color = 'var(--text2)';
+  } else {
+    stkEl.style.display = 'none';
+    pbEl.style.display = '';
+    pbBtn.style.border = '2px solid var(--green)';
+    pbBtn.style.background = 'var(--green-glow)';
+    pbBtn.querySelector('div:nth-child(2)').style.color = 'var(--green)';
+    stkBtn.style.border = '2px solid var(--border)';
+    stkBtn.style.background = 'var(--bg3)';
+    stkBtn.querySelector('div:nth-child(2)').style.color = 'var(--text2)';
+    // Show user's phone as account reference
+    const phone = state.user?.phone || state.user?.user_metadata?.phone || '';
+    const ref = phone.replace(/^\+?254/, '0').replace(/^0+/, '0') || 'your phone';
+    if ($('paybill-ref-display')) $('paybill-ref-display').textContent = ref;
+    if ($('paybill-account')) $('paybill-account').textContent = ref;
+  }
+}
+
+function openDepositModal() {
+  depositMethod = 'stk';
+  $('deposit-modal').classList.remove('hidden');
+  // Reset to STK view
+  if ($('stk-section')) $('stk-section').style.display = '';
+  if ($('paybill-section')) $('paybill-section').style.display = 'none';
+}
 function closeDepositModal() { $('deposit-modal').classList.add('hidden'); }
+
+async function checkPaybillPayment() {
+  showToast('⏳ Checking payment...', 'info', 3000);
+  try {
+    const res = await fetch(API + '/api/payments/paybill/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.token },
+      body: JSON.stringify({ phone: state.user?.phone || '' })
+    });
+    const data = await res.json();
+    if (data.success && data.amount) {
+      state.balance += data.amount;
+      await saveUserBalance();
+      state.transactions.unshift({ type:'deposit', icon:'💰', desc:'Paybill Deposit', amount: data.amount, date: new Date().toISOString().split('T')[0] });
+      updateBalances(); renderWallet();
+      closeDepositModal();
+      showToast(`✅ KSh ${data.amount.toLocaleString()} added to your wallet!`, 'success');
+    } else {
+      showToast('Payment not found yet. Wait a moment and try again.', 'error', 4000);
+    }
+  } catch(e) {
+    showToast('Could not check payment. Try again shortly.', 'error');
+  }
+}
 function openWithdrawModal() { $('with-balance-display').textContent = fmtBal(state.balance); $('withdraw-modal').classList.remove('hidden'); }
 function closeWithdrawModal() { $('withdraw-modal').classList.add('hidden'); }
 
