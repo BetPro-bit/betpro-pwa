@@ -1076,8 +1076,11 @@
         <div style="height:1px;background:var(--border);margin:8px 0"></div>
         <div class="slip-row"><span class="color-text2">Potential Win</span><span class="color-green fw-900 fs-18" id="slip-win">KSh 0.00</span></div>
       </div>
-      <button class="btn btn-green" onclick="placeBet()">Place Bet</button>
-      <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:8px">Min stake: KSh 22 per bet</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button class="btn btn-green" style="flex:1" onclick="placeBet()">Place Bet</button>
+        <button class="btn btn-outline" style="width:auto;padding:0 16px;color:var(--red);border-color:var(--red)" onclick="clearAllBets()">Clear All</button>
+      </div>
+      <div style="font-size:11px;color:var(--text3);text-align:center">Min stake: KSh 22 per bet</div>
     </div>
   </div>
 
@@ -1128,16 +1131,36 @@ let matchOddsCache = {};
 
 function generateOdds(matchId) {
   if (matchOddsCache[matchId]) return matchOddsCache[matchId];
+  // Generate realistic balanced odds: low home = high away, draw always ~2.8-4.0
+  // Home favourite: 1.x home → 4.x away
+  // Even match:     2.x home → 2.x away
+  // Away favourite: 4.x home → 1.x away
+  const r = Math.random(); // 0=home fav, 0.5=even, 1=away fav
+  let home, away, draw;
+  if (r < 0.4) {
+    // Home favourite
+    home = +(1.1 + Math.random() * 0.8).toFixed(2);  // 1.1 - 1.9
+    away = +(3.5 + Math.random() * 2.5).toFixed(2);  // 3.5 - 6.0
+    draw = +(3.0 + Math.random() * 1.2).toFixed(2);  // 3.0 - 4.2
+  } else if (r < 0.65) {
+    // Fairly even
+    home = +(2.0 + Math.random() * 0.8).toFixed(2);  // 2.0 - 2.8
+    away = +(2.0 + Math.random() * 0.8).toFixed(2);  // 2.0 - 2.8
+    draw = +(2.8 + Math.random() * 0.6).toFixed(2);  // 2.8 - 3.4
+  } else {
+    // Away favourite
+    home = +(3.5 + Math.random() * 2.5).toFixed(2);  // 3.5 - 6.0
+    away = +(1.1 + Math.random() * 0.8).toFixed(2);  // 1.1 - 1.9
+    draw = +(3.0 + Math.random() * 1.2).toFixed(2);  // 3.0 - 4.2
+  }
   const odds = {
-    home: +(1.3 + Math.random() * 3).toFixed(2),
-    draw: +(2.8 + Math.random() * 1.5).toFixed(2),
-    away: +(1.3 + Math.random() * 4).toFixed(2),
-    bttsYes: +(1.5 + Math.random() * 1.2).toFixed(2),
-    bttsNo:  +(1.4 + Math.random() * 1.0).toFixed(2),
-    over25:  +(1.6 + Math.random() * 1.0).toFixed(2),
-    under25: +(1.5 + Math.random() * 1.0).toFixed(2),
-    cornersOver:  +(1.7 + Math.random() * 1.0).toFixed(2),
-    cornersUnder: +(1.6 + Math.random() * 1.0).toFixed(2),
+    home, draw, away,
+    bttsYes: +(1.5 + Math.random() * 1.0).toFixed(2),
+    bttsNo:  +(1.5 + Math.random() * 1.0).toFixed(2),
+    over25:  +(1.6 + Math.random() * 0.8).toFixed(2),
+    under25: +(1.6 + Math.random() * 0.8).toFixed(2),
+    cornersOver:  +(1.7 + Math.random() * 0.8).toFixed(2),
+    cornersUnder: +(1.7 + Math.random() * 0.8).toFixed(2),
   };
   odds[0] = odds.home; odds[1] = odds.draw; odds[2] = odds.away;
   matchOddsCache[matchId] = odds;
@@ -1286,7 +1309,7 @@ function renderHomeMatches(matches) {
       <div style="display:flex;gap:4px;margin:8px 0 6px">
         ${['1X2','Goals','Corners'].map(t => `<div onclick="setMatchTab(${m.id},'${t}');switchTab('sports')" style="flex:1;text-align:center;padding:5px 2px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;background:var(--bg3);color:var(--text2);border:1px solid var(--border)">${t}</div>`).join('')}
       </div>
-      ${(['IN_PLAY','PAUSED','FINISHED','CANCELLED','POSTPONED','SUSPENDED'].includes(m.status)) ? `
+      ${(['IN_PLAY','PAUSED','FINISHED','CANCELLED','SUSPENDED'].includes(m.status)) ? `
       <div style="text-align:center;padding:8px;background:var(--bg3);border-radius:8px;font-size:12px;color:var(--text2)">
         ${m.status==='FINISHED'?'⛔ Match ended — betting closed':'🔒 Match started — betting closed'}
       </div>` : `
@@ -1622,16 +1645,37 @@ function addBet(matchId, match, selection, odd, status) {
   fab.classList.toggle('hidden', state.bets.length === 0);
   $('slip-count').textContent = state.bets.length;
 }
+function removeBet(matchId) {
+  state.bets = state.bets.filter(b => b.matchId !== matchId);
+  renderMatches();
+  const fab = $('bet-slip-fab');
+  fab.classList.toggle('hidden', state.bets.length === 0);
+  $('slip-count').textContent = state.bets.length;
+  if (state.bets.length === 0) { closeBetSlip(); return; }
+  openBetSlip(); // re-render slip
+}
+function clearAllBets() {
+  state.bets = [];
+  renderMatches();
+  $('bet-slip-fab').classList.add('hidden');
+  closeBetSlip();
+}
 function openBetSlip() {
   $('slip-modal-count').textContent = state.bets.length;
   $('slip-items').innerHTML = state.bets.map(b => `
-    <div class="slip-item">
-      <span class="slip-match">${b.match}</span>
-      <span class="slip-sel">${b.selection}</span>
-      <span class="slip-odd">${b.odd}</span>
+    <div class="slip-item" style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1;min-width:0">
+        <div class="slip-match" style="font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.match}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
+          <span class="slip-sel" style="font-size:13px;font-weight:700">${b.selection}</span>
+          <span class="slip-odd" style="font-size:14px;font-weight:800;color:var(--green)">${b.odd}</span>
+        </div>
+      </div>
+      <button onclick="removeBet(${b.matchId})" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px;line-height:1;flex-shrink:0" title="Remove">✕</button>
     </div>`).join('');
   const totalOdds = state.bets.reduce((a,b) => a*b.odd, 1);
   $('slip-total-odds').textContent = totalOdds.toFixed(2);
+  updateSlipWin();
   $('bet-slip-modal').classList.remove('hidden');
 }
 function closeBetSlip() { $('bet-slip-modal').classList.add('hidden'); }
