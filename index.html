@@ -1286,12 +1286,16 @@ function renderHomeMatches(matches) {
       <div style="display:flex;gap:4px;margin:8px 0 6px">
         ${['1X2','Goals','Corners'].map(t => `<div onclick="setMatchTab(${m.id},'${t}');switchTab('sports')" style="flex:1;text-align:center;padding:5px 2px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;background:var(--bg3);color:var(--text2);border:1px solid var(--border)">${t}</div>`).join('')}
       </div>
+      ${(['IN_PLAY','PAUSED','FINISHED','CANCELLED','POSTPONED','SUSPENDED'].includes(m.status)) ? `
+      <div style="text-align:center;padding:8px;background:var(--bg3);border-radius:8px;font-size:12px;color:var(--text2)">
+        ${m.status==='FINISHED'?'⛔ Match ended — betting closed':'🔒 Match started — betting closed'}
+      </div>` : `
       <div class="odds-row">
         ${[['1 Home',o.home],['X Draw',o.draw],['2 Away',o.away]].map(([l,odd]) => `
-          <div class="odd-btn${isBetSelected(m.id,l)?' selected':''}" onclick="addBet(${m.id},'${matchLabel}','${l}',${odd})">
+          <div class="odd-btn${isBetSelected(m.id,l)?' selected':''}" onclick="addBet(${m.id},'${matchLabel}','${l}',${odd},'${m.status}')">
             <div class="odd-label">${l}</div><div class="odd-value">${odd}</div>
           </div>`).join('')}
-      </div>
+      </div>`}
     </div>`;
   }).join('');
 }
@@ -1569,6 +1573,7 @@ function renderMatches(matches) {
           const markets = getMarkets(m);
           const tabs = Object.keys(markets);
           const matchLabel = m.home + ' vs ' + m.away;
+          const isLocked = ['IN_PLAY','PAUSED','FINISHED','CANCELLED','POSTPONED','SUSPENDED'].includes(m.status);
           return `
     <div class="match-card">
       <div class="match-header">
@@ -1583,19 +1588,30 @@ function renderMatches(matches) {
       <div style="display:flex;gap:4px;margin:8px 0 6px">
         ${tabs.map(t => `<div onclick="setMatchTab(${m.id},'${t}')" style="flex:1;text-align:center;padding:5px 2px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;background:${activeTab===t?'var(--green)':' var(--bg3)'};color:${activeTab===t?'#000':'var(--text2)'};border:1px solid ${activeTab===t?'var(--green)':'var(--border)'}">${t}</div>`).join('')}
       </div>
+      ${isLocked ? `
+      <div style="text-align:center;padding:8px;background:var(--bg3);border-radius:8px;font-size:12px;color:var(--text2)">
+        ${m.status==='FINISHED'?'⛔ Match ended — betting closed':'🔒 Match started — betting closed'}
+      </div>` : `
       <div class="odds-row" style="flex-wrap:wrap;gap:4px">
         ${markets[activeTab].map(({label,odd}) => `
-          <div class="odd-btn${isBetSelected(m.id,label)?' selected':''}" onclick="addBet(${m.id},'${matchLabel}','${label}',${odd})" style="flex:1;min-width:calc(33% - 4px)">
+          <div class="odd-btn${isBetSelected(m.id,label)?' selected':''}" onclick="addBet(${m.id},'${matchLabel}','${label}',${odd},'${m.status}')" style="flex:1;min-width:calc(33% - 4px)">
             <div class="odd-label">${label}</div>
             <div class="odd-value">${odd}</div>
           </div>`).join('')}
-      </div>
+      </div>`}
     </div>`;
         }).join(''));
 }
 function setMatchTab(matchId, tab) { matchMarketTab[matchId] = tab; renderMatches(); }
 function isBetSelected(matchId, sel) { return state.bets.some(b => b.matchId===matchId && b.selection===sel); }
-function addBet(matchId, match, selection, odd) {
+function addBet(matchId, match, selection, odd, status) {
+  // Block betting on started/finished matches
+  const blocked = ['IN_PLAY','PAUSED','FINISHED','CANCELLED','POSTPONED','SUSPENDED'];
+  if (status && blocked.includes(status)) {
+    if (status === 'FINISHED') showToast('⛔ This match has already ended', 'error');
+    else showToast('⛔ This match has already started — betting is closed', 'error');
+    return;
+  }
   const idx = state.bets.findIndex(b => b.matchId===matchId);
   if (idx >= 0) {
     if (state.bets[idx].selection === selection) state.bets.splice(idx, 1);
