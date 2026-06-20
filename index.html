@@ -2430,7 +2430,7 @@ function renderProfile() {
 // ── BetPro Aviator ────────────────────────────────────────────────────────────
 const AV2 = {
   phase: 'idle', // idle|betting|flying|crashed|waiting
-  mult: 1.0, crashAt: null,
+  mult: 1.0, crashAt: 1.0,
   interval: null, betInterval: null,
   betCountdown: 10,
   points: [],
@@ -2596,7 +2596,7 @@ function av2StartBetting() {
   // Reinit canvas if not ready
   if (!AV2.canvas || !AV2.ctx) av2InitCanvas();
   AV2.phase = 'betting';
-  AV2.points = []; AV2.mult = 1.0; AV2.crashAt = null;
+  AV2.points = []; AV2.mult = 1.0;
   AV2.slots.forEach(s => { s.active = false; s.stake = 0; s.auto = 0; s.cashedOut = false; });
   av2SetPhase('betting', '🟡 Betting Open', 'betting');
   av2SetMult('Place Bet', 'betting');
@@ -2659,12 +2659,12 @@ async function av2StartFlight() {
   av2SetPhase('flying', '✈️ Flying', 'flying');
   AV2.mult = 1.0; AV2.points = [1.0];
 
-  // Set crash point now — from local fallback only (server controls if roundId exists)
+  // Set crash point now — from backend roundId or local fallback
   // This is the SINGLE crash point used for the whole round
   if (!AV2.roundId) {
-    AV2.crashAt = AV2._localCrash ? parseFloat(AV2._localCrash) : parseFloat(av2LocalCrash());
+    AV2.crashAt = parseFloat(av2LocalCrash());
   }
-  // If roundId exists, crashAt stays null — server reveals it on crash settlement
+  // If roundId exists, crashAt stays null — server validates on cashout/crash
 
   const cdEl = $('av2-countdown'); if (cdEl) cdEl.textContent = '';
   av2UpdateSlotUI();
@@ -2690,8 +2690,7 @@ async function av2StartFlight() {
     });
 
     // Crash check
-    // When roundId exists, server controls crash — local limit is a safety ceiling of 100x
-    const crashLimit = AV2.roundId ? 100 : (AV2.crashAt || 100);
+    const crashLimit = AV2.roundId ? 10 : AV2.crashAt; // server handles crash if roundId
     if (AV2.mult >= crashLimit) { clearInterval(AV2.interval); av2Crash(); }
   }, 80);
 }
@@ -2713,7 +2712,7 @@ async function av2Crash() {
   });
 
   const anyLost = AV2.slots.some(s => s.active === false && s.stake > 0 && !s.cashedOut);
-  if (anyLost) showToast(`💥 Crashed at ${(AV2.crashAt || AV2.mult).toFixed(2)}x!`, 'error', 3000);
+  if (anyLost) showToast(`💥 Crashed at ${AV2.crashAt.toFixed(2)}x!`, 'error', 3000);
 
   // Tell backend — it reveals crashAt and settles remaining slots
   try {
