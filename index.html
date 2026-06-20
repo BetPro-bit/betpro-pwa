@@ -2673,7 +2673,8 @@ async function av2StartFlight() {
   console.log('Round started. CrashAt (local):', AV2.crashAt, '| RoundId:', AV2.roundId);
 
   AV2.interval = setInterval(() => {
-    AV2.mult = +(AV2.mult + 0.015 + AV2.mult * 0.010).toFixed(3);
+    // Slow realistic increment — roughly +0.01 per tick at low values
+    AV2.mult = +(AV2.mult + 0.006 + AV2.mult * 0.004).toFixed(3);
     AV2.points.push(AV2.mult);
     av2SetMult(AV2.mult);
     av2DrawGraph();
@@ -2689,10 +2690,12 @@ async function av2StartFlight() {
       if (s.active && !s.cashedOut && s.auto > 0 && AV2.mult >= s.auto) av2CashOut(s.id);
     });
 
-    // Crash check
-    const crashLimit = AV2.roundId ? 10 : AV2.crashAt; // server handles crash if roundId
-    if (AV2.mult >= crashLimit) { clearInterval(AV2.interval); av2Crash(); }
-  }, 80);
+    // Crash check — always use AV2.crashAt (set before interval)
+    if (AV2.crashAt && AV2.mult >= AV2.crashAt) {
+      clearInterval(AV2.interval);
+      av2Crash();
+    }
+  }, 100);
 }
 
 async function av2Crash() {
@@ -2711,8 +2714,7 @@ async function av2Crash() {
     }
   });
 
-  const anyLost = AV2.slots.some(s => s.active === false && s.stake > 0 && !s.cashedOut);
-  if (anyLost) showToast(`💥 Crashed at ${AV2.crashAt.toFixed(2)}x!`, 'error', 3000);
+  if (totalLost > 0) showToast(`💥 Crashed at ${(AV2.crashAt||AV2.mult).toFixed(2)}x! Lost KSh ${totalLost}`, 'error', 3000);
 
   // Tell backend — it reveals crashAt and settles remaining slots
   try {
@@ -2734,8 +2736,12 @@ async function av2Crash() {
     av2RenderHistory();
   }
   av2UpdateSlotUI();
+  await saveUserBalance();
   updateGameBalances(); updateBalances();
 
+  // Reset for next round
+  AV2.crashAt = null;
+  AV2.roundId = null;
   setTimeout(av2StartBetting, 4000);
 }
 
