@@ -1433,7 +1433,7 @@ const VF_TEAMS = [
 ];
 const VF_SCORES = ['0-0','1-0','2-0','2-1','3-1','3-0','1-1','2-2','0-1','1-2','0-2','1-3','1-0','2-1','1-0','2-0'];
 const VF_ROUND_DURATION = 90;
-const VF_NEXT_ROUND_WINDOW = 10; // seconds to place bets for next round before it starts
+const VF_NEXT_ROUND_WINDOW = 20; // seconds to place bets for next round before it starts
 
 let vfState = {
   round: 1, matches: [], slip: {}, tickets: [],
@@ -1517,14 +1517,22 @@ function vfNewRound() {
 function vfTick() {
   vfState.timeLeft--;
   vfUpdateTimer();
-  if (vfState.phase === 'betting' && vfState.timeLeft <= 0) {
-    // Betting closed — show 10s window to prep next round bets
+  // Close betting at 40 seconds remaining
+  if (vfState.phase === 'betting' && vfState.timeLeft === 40) {
+    vfState.phase = 'closed';
+    vfRenderMatches(); // lock odds
+    const label = $('vf-phase-label');
+    if (label) { label.textContent = '🔒 Betting Closed'; label.style.color = '#ff4757'; }
+    const timer = $('vf-timer');
+    if (timer) timer.style.color = '#ff4757';
+  }
+  if ((vfState.phase === 'betting' || vfState.phase === 'closed') && vfState.timeLeft <= 0) {
+    // Round over — show 20s window to prep next round bets
     vfState.phase = 'next_window';
     vfState.timeLeft = VF_NEXT_ROUND_WINDOW;
-    vfRenderMatches(); // lock current round odds
+    vfRenderMatches();
     const label = $('vf-phase-label');
-    if (label) { label.textContent = '⏭ Bet on NEXT round now!'; label.style.color = '#ffd700'; }
-    // Show next round preview slip stays open
+    if (label) { label.textContent = '⏭ Preparing next round...'; label.style.color = '#ffd700'; }
   } else if (vfState.phase === 'next_window' && vfState.timeLeft <= 0) {
     clearInterval(vfState.timer);
     // Move any pending slip bets to next round ticket (saved already via vfPlaceBet)
@@ -1549,7 +1557,7 @@ function vfUpdateTimer() {
   el.style.color = color;
   if (prog) prog.style.background = color;
   if (label && vfState.phase === 'betting') {
-    label.textContent = isWarning ? '⚠️ Betting closes soon!' : '🟢 Betting Open';
+    label.textContent = t <= 40 ? '⚠️ Betting closes in ' + t + 's!' : '🟢 Betting Open';
     label.style.color = color;
   }
 }
@@ -1608,11 +1616,11 @@ function vfSimulateResults() {
   // Settle tickets
   vfSettleTickets(results);
 
-  // Start next round immediately after results
+  // Show results for 20 seconds then start next round
   setTimeout(() => {
     vfState.round++;
     vfNewRound();
-  }, 3000);
+  }, 20000);
 }
 
 function vfSettleTickets(results) {
@@ -1734,8 +1742,8 @@ function vfClearSlip() {
 }
 
 function vfPlaceBet() {
-  if (vfState.phase !== 'betting' && vfState.phase !== 'next_window') {
-    showToast('Betting is closed. Wait for the next round.', 'error'); return;
+  if (vfState.phase !== 'betting') {
+    showToast('Betting is closed for this round. Wait for next round.', 'error'); return;
   }
   const sels = Object.values(vfState.slip);
   if (sels.length < 6) { showToast(`Select at least 6 matches (${sels.length}/6 selected)`, 'error'); return; }
