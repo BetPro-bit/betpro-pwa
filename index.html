@@ -771,9 +771,56 @@
 </div>
 
     <!-- TAB BAR -->
+  <!-- VIRTUAL FOOTBALL TAB -->
+  <div id="tab-virtual" class="main-content hidden">
+    <div style="padding:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div><div style="font-size:20px;font-weight:800">🕹️ Virtual Football</div><div style="font-size:12px;color:var(--text2)">New round every 90 seconds</div></div>
+        <div style="text-align:right"><div style="font-size:11px;color:var(--text2)">Round</div><div style="font-size:18px;font-weight:800;color:var(--green)" id="vf-round-num">#1</div></div>
+      </div>
+      <div style="background:var(--bg2);border-radius:14px;padding:14px;margin-bottom:14px;border:1px solid var(--border)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span id="vf-phase-label" style="font-size:13px;font-weight:700;color:var(--green)">🟢 Betting Open</span>
+          <span id="vf-timer" style="font-size:22px;font-weight:900;color:var(--green);font-variant-numeric:tabular-nums">1:30</span>
+        </div>
+        <div style="background:var(--bg3);border-radius:6px;height:6px;overflow:hidden">
+          <div id="vf-progress" style="height:100%;background:var(--green);transition:width 1s linear;width:100%"></div>
+        </div>
+      </div>
+      <div id="vf-matches"></div>
+      <div id="vf-slip" style="display:none;position:sticky;bottom:70px;background:var(--bg2);border:1px solid var(--green);border-radius:14px;padding:14px;margin-top:12px;z-index:100">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <span style="font-weight:800;font-size:15px">🎟 Virtual Slip (<span id="vf-slip-count">0</span>)</span>
+          <button onclick="vfClearSlip()" style="background:none;border:none;color:var(--red);font-size:12px;cursor:pointer;font-weight:700">Clear All</button>
+        </div>
+        <div id="vf-slip-items" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+          <span style="color:var(--text2)">Total Odds</span><span style="font-weight:800" id="vf-total-odds">0.00</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <input id="vf-stake" type="number" placeholder="Stake (min KSh 50)" class="form-input" style="flex:1" oninput="vfUpdateWin()" min="50"/>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:12px">
+          <span style="color:var(--text2)">Potential Win</span>
+          <span style="font-weight:900;color:var(--green);font-size:16px" id="vf-potential-win">KSh 0.00</span>
+        </div>
+        <button class="btn btn-green" onclick="vfPlaceBet()" id="vf-place-btn">Place Bet</button>
+      </div>
+      <div id="vf-results" style="display:none;margin-top:14px">
+        <div style="font-size:16px;font-weight:800;margin-bottom:10px">📊 Round Results</div>
+        <div id="vf-results-list"></div>
+      </div>
+      <div id="vf-history" style="margin-top:16px">
+        <div style="font-size:15px;font-weight:800;margin-bottom:8px">🎫 My Tickets</div>
+        <div id="vf-tickets-list"><div style="color:var(--text2);font-size:13px">No tickets yet</div></div>
+      </div>
+    </div>
+  </div>
+
     <div class="tab-bar">
       <button class="tab-item active" id="tabbar-home" onclick="switchTab('home')"><span class="tab-icon">🏠</span><span class="tab-label">Home</span></button>
       <button class="tab-item" id="tabbar-sports" onclick="switchTab('sports')"><span class="tab-icon">⚽</span><span class="tab-label">Sports</span></button>
+      <button class="tab-item" id="tabbar-virtual" onclick="switchTab('virtual')"><span class="tab-icon">🕹️</span><span class="tab-label">Virtual</span></button>
       <button class="tab-item" id="tabbar-wallet" onclick="switchTab('wallet')"><div class="tab-deposit"><span>+ Deposit</span></div></button>
       <button class="tab-item" id="tabbar-casino" onclick="switchTab('casino')"><span class="tab-icon">🎮</span><span class="tab-label">Casino</span></button>
       <button class="tab-item" id="tabbar-profile" onclick="switchTab('profile')"><span class="tab-icon">👤</span><span class="tab-label">Profile</span></button>
@@ -1373,7 +1420,7 @@ function showScreen(name) {
   $('screen-' + name).classList.add('active');
 }
 function switchTab(tab) {
-  ['home','sports','casino','wallet','profile'].forEach(t => {
+  ['home','sports','casino','wallet','profile','virtual'].forEach(t => {
     $('tab-' + t).classList.toggle('hidden', t !== tab);
     const tb = $('tabbar-' + t); if (tb) tb.classList.toggle('active', t === tab);
   });
@@ -1381,6 +1428,358 @@ function switchTab(tab) {
   if (tab === 'sports') { renderSports(); fetchRealMatches(); }
   if (tab === 'wallet') renderWallet();
   if (tab === 'profile') renderProfile();
+  if (tab === 'virtual') vfInit();
+}
+
+// ── VIRTUAL FOOTBALL ENGINE ───────────────────────────────────────────────────
+const VF_TEAMS = [
+  'Manchester Blues','Manchester Reds','North London Spurs','North London Gunners',
+  'Mersey Reds','Mersey Blues','West London Lions','West London Royals',
+  'Midlands Villa','Midlands Wolves','East London Hammers','South Coast Saints',
+  'Fox City','Magpie United','Palace Eagles','Brighton Seagulls',
+  'Cherries FC','Forest Reds','Brentford Bees','Fulham Whites'
+];
+const VF_SCORES = ['0-0','1-0','2-0','2-1','3-1','3-0','1-1','2-2','0-1','1-2','0-2','1-3','1-0','2-1','1-0','2-0'];
+const VF_ROUND_DURATION = 90;
+
+let vfState = {
+  round: 1, matches: [], slip: {}, tickets: [],
+  phase: 'betting', // 'betting' | 'results'
+  timeLeft: VF_ROUND_DURATION,
+  timer: null, initialized: false,
+  fixtureHistory: [], // prevent recent repeats
+};
+
+function vfInit() {
+  if (vfState.initialized) return;
+  vfState.initialized = true;
+  vfNewRound();
+}
+
+function vfGenerateOdds(type) {
+  const r = () => Math.random();
+  if (type === 'home') return {
+    home: +(1.30 + r()*0.50).toFixed(2),
+    draw: +(3.50 + r()*2.00).toFixed(2),
+    away: +(4.50 + r()*4.50).toFixed(2)
+  };
+  if (type === 'balanced') return {
+    home: +(2.00 + r()*0.80).toFixed(2),
+    draw: +(2.80 + r()*1.00).toFixed(2),
+    away: +(2.00 + r()*0.80).toFixed(2)
+  };
+  return { // underdog
+    home: +(4.00 + r()*4.00).toFixed(2),
+    draw: +(3.20 + r()*1.80).toFixed(2),
+    away: +(1.20 + r()*0.60).toFixed(2)
+  };
+}
+
+function vfGenerateFixtures() {
+  const teams = [...VF_TEAMS];
+  const fixtures = []; const used = new Set();
+  // Shuffle teams
+  for (let i = teams.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [teams[i],teams[j]] = [teams[j],teams[i]];
+  }
+  let attempts = 0;
+  while (fixtures.length < 10 && attempts < 200) {
+    attempts++;
+    const hi = Math.floor(Math.random()*teams.length);
+    let ai = Math.floor(Math.random()*teams.length);
+    if (ai === hi) continue;
+    const home = teams[hi], away = teams[ai];
+    const key = [home,away].sort().join('|');
+    if (used.has(home) || used.has(away)) continue;
+    // Check fixture history (avoid last 5 rounds = ~50 fixtures)
+    const recentCount = vfState.fixtureHistory.filter(k => k===key).length;
+    if (recentCount > 0 && vfState.fixtureHistory.slice(-50).includes(key)) continue;
+    const types = ['home','balanced','balanced','underdog'];
+    const type = types[Math.floor(Math.random()*types.length)];
+    const odds = vfGenerateOdds(type);
+    fixtures.push({ id: fixtures.length+1, home, away, odds, type });
+    used.add(home); used.add(away);
+    vfState.fixtureHistory.push(key);
+    if (vfState.fixtureHistory.length > 100) vfState.fixtureHistory.shift();
+  }
+  return fixtures;
+}
+
+function vfNewRound() {
+  clearInterval(vfState.timer);
+  vfState.phase = 'betting';
+  vfState.matches = vfGenerateFixtures();
+  vfState.slip = {};
+  vfState.timeLeft = VF_ROUND_DURATION;
+  $('vf-round-num').textContent = '#' + vfState.round;
+  $('vf-results').style.display = 'none';
+  vfRenderMatches();
+  vfRenderSlip();
+  vfUpdateTimer();
+  vfState.timer = setInterval(vfTick, 1000);
+}
+
+function vfTick() {
+  vfState.timeLeft--;
+  vfUpdateTimer();
+  if (vfState.timeLeft <= 0) {
+    clearInterval(vfState.timer);
+    vfSimulateResults();
+  }
+}
+
+function vfUpdateTimer() {
+  const t = vfState.timeLeft;
+  const m = Math.floor(t/60), s = t%60;
+  const el = $('vf-timer');
+  const prog = $('vf-progress');
+  const label = $('vf-phase-label');
+  if (!el) return;
+  el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  const pct = (vfState.timeLeft / VF_ROUND_DURATION) * 100;
+  if (prog) prog.style.width = pct + '%';
+  const isWarning = t <= 20;
+  const color = isWarning ? '#ff4757' : 'var(--green)';
+  el.style.color = color;
+  if (prog) prog.style.background = color;
+  if (label) {
+    label.textContent = vfState.phase === 'betting'
+      ? (isWarning ? '⚠️ Betting closes soon!' : '🟢 Betting Open')
+      : '⏳ Settling bets...';
+    label.style.color = color;
+  }
+}
+
+function vfSimulateResult(match) {
+  // Weighted probability based on odds (lower odds = higher chance)
+  const homeProb = 1/match.odds.home;
+  const drawProb = 1/match.odds.draw;
+  const awayProb = 1/match.odds.away;
+  const total = homeProb + drawProb + awayProb;
+  const r = Math.random() * total;
+  let outcome;
+  if (r < homeProb) outcome = 'home';
+  else if (r < homeProb + drawProb) outcome = 'draw';
+  else outcome = 'away';
+
+  // Pick a realistic score matching outcome
+  const homeScores = ['1-0','2-0','2-1','3-0','3-1','1-0','2-1'];
+  const drawScores = ['0-0','1-1','2-2','1-1','0-0'];
+  const awayScores = ['0-1','0-2','1-2','0-3','1-3','0-1'];
+  const pool = outcome==='home'?homeScores:outcome==='draw'?drawScores:awayScores;
+  const score = pool[Math.floor(Math.random()*pool.length)];
+  return { outcome, score };
+}
+
+function vfSimulateResults() {
+  vfState.phase = 'results';
+  const label = $('vf-phase-label');
+  if (label) { label.textContent = '🏁 Round Over'; label.style.color = 'var(--text2)'; }
+
+  // Generate results for all matches
+  const results = vfState.matches.map(m => ({ ...m, result: vfSimulateResult(m) }));
+
+  // Render results
+  const el = $('vf-results');
+  const list = $('vf-results-list');
+  if (el && list) {
+    el.style.display = '';
+    list.innerHTML = results.map(m => {
+      const [hs, as] = m.result.score.split('-').map(Number);
+      const winner = hs > as ? 'home' : hs < as ? 'away' : 'draw';
+      return `
+      <div style="background:var(--bg2);border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid var(--border)">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:13px;font-weight:${winner==='home'?'800':'400'};color:${winner==='home'?'var(--green)':'var(--text)'}">${m.home}</span>
+          <span style="font-size:18px;font-weight:900;padding:0 12px;color:var(--green)">${m.result.score}</span>
+          <span style="font-size:13px;font-weight:${winner==='away'?'800':'400'};color:${winner==='away'?'var(--green)':'var(--text)'}">${m.away}</span>
+        </div>
+        <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:4px">${winner==='draw'?'Draw':winner==='home'?m.home+' Win':m.away+' Win'}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Settle tickets
+  vfSettleTickets(results);
+
+  // Next round after 10 seconds
+  let countdown = 10;
+  const nextLabel = $('vf-phase-label');
+  const nextTimer = setInterval(() => {
+    countdown--;
+    if (nextLabel) nextLabel.textContent = `⏭ Next round in ${countdown}s...`;
+    if (countdown <= 0) {
+      clearInterval(nextTimer);
+      vfState.round++;
+      vfNewRound();
+    }
+  }, 1000);
+}
+
+function vfSettleTickets(results) {
+  const resultMap = {};
+  results.forEach(m => { resultMap[m.id] = m.result.outcome; });
+
+  vfState.tickets.forEach(ticket => {
+    if (ticket.round !== vfState.round || ticket.settled) return;
+    let won = true;
+    ticket.selections.forEach(sel => {
+      if (resultMap[sel.matchId] !== sel.pick) won = false;
+    });
+    ticket.won = won;
+    ticket.settled = true;
+    if (won) {
+      const winAmount = parseFloat((ticket.stake * ticket.totalOdds).toFixed(2));
+      ticket.winAmount = winAmount;
+      state.balance += winAmount;
+      updateBalances();
+      showToast(`🎉 Virtual bet won! KSh ${winAmount.toLocaleString()} credited!`, 'success', 5000);
+    } else {
+      ticket.winAmount = 0;
+      showToast(`Virtual bet lost. Better luck next round!`, 'error', 3000);
+    }
+  });
+  vfRenderTickets();
+}
+
+function vfAddSelection(matchId, pick, odd, home, away) {
+  if (vfState.phase !== 'betting') { showToast('Betting is closed for this round', 'error'); return; }
+  const key = matchId;
+  if (vfState.slip[key]?.pick === pick) {
+    delete vfState.slip[key]; // deselect
+  } else {
+    vfState.slip[key] = { matchId, pick, odd, label: pick==='home'?'1 '+home:pick==='draw'?'X Draw':'2 '+away, home, away };
+  }
+  vfRenderMatches();
+  vfRenderSlip();
+}
+
+function vfRenderMatches() {
+  const el = $('vf-matches');
+  if (!el) return;
+  const locked = vfState.phase !== 'betting';
+  el.innerHTML = vfState.matches.map(m => {
+    const sel = vfState.slip[m.id];
+    const picks = [
+      { pick:'home', label:'1 Home', odd: m.odds.home },
+      { pick:'draw', label:'X Draw', odd: m.odds.draw },
+      { pick:'away', label:'2 Away', odd: m.odds.away },
+    ];
+    return `
+    <div style="background:var(--bg2);border-radius:12px;padding:12px;margin-bottom:10px;border:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:11px;color:var(--text2)">🕹️ Virtual • Round ${vfState.round}</span>
+        <span style="font-size:11px;color:var(--text3)">${m.type==='home'?'Home Fav':m.type==='underdog'?'Away Fav':'Even'}</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <span style="font-size:13px;font-weight:700;flex:1">${m.home}</span>
+        <span style="font-size:12px;color:var(--text2);padding:0 8px">vs</span>
+        <span style="font-size:13px;font-weight:700;flex:1;text-align:right">${m.away}</span>
+      </div>
+      ${locked ? `<div style="text-align:center;padding:8px;background:var(--bg3);border-radius:8px;font-size:12px;color:var(--text2)">🔒 Betting closed</div>` :
+      `<div style="display:flex;gap:6px">
+        ${picks.map(p => `
+          <div onclick="vfAddSelection(${m.id},'${p.pick}',${p.odd},'${m.home}','${m.away}')"
+            style="flex:1;text-align:center;padding:8px 4px;border-radius:8px;cursor:pointer;border:2px solid ${sel?.pick===p.pick?'var(--green)':'var(--border)'};background:${sel?.pick===p.pick?'var(--green-glow)':'var(--bg3)'}">
+            <div style="font-size:10px;color:var(--text2);margin-bottom:3px">${p.label}</div>
+            <div style="font-size:15px;font-weight:800;color:${sel?.pick===p.pick?'var(--green)':'var(--text)'}">${p.odd}</div>
+          </div>`).join('')}
+      </div>`}
+    </div>`;
+  }).join('');
+}
+
+function vfRenderSlip() {
+  const sels = Object.values(vfState.slip);
+  const slipEl = $('vf-slip');
+  const countEl = $('vf-slip-count');
+  const itemsEl = $('vf-slip-items');
+  const oddsEl = $('vf-total-odds');
+  if (!slipEl) return;
+
+  if (sels.length === 0) { slipEl.style.display = 'none'; return; }
+  slipEl.style.display = '';
+  if (countEl) countEl.textContent = sels.length;
+
+  const totalOdds = sels.reduce((a,b) => a*b.odd, 1);
+  if (oddsEl) oddsEl.textContent = totalOdds.toFixed(2);
+
+  if (itemsEl) {
+    itemsEl.innerHTML = sels.map(s => `
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border-radius:8px;padding:8px 10px">
+        <div>
+          <div style="font-size:11px;color:var(--text2)">${s.home} vs ${s.away}</div>
+          <div style="font-size:13px;font-weight:700">${s.label}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:14px;font-weight:800;color:var(--green)">${s.odd}</span>
+          <button onclick="vfAddSelection(${s.matchId},'${s.pick}',${s.odd},'${s.home}','${s.away}')" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer">✕</button>
+        </div>
+      </div>`).join('');
+  }
+  vfUpdateWin();
+}
+
+function vfUpdateWin() {
+  const stake = parseFloat($('vf-stake')?.value) || 0;
+  const sels = Object.values(vfState.slip);
+  const totalOdds = sels.reduce((a,b) => a*b.odd, 1);
+  const win = $('vf-potential-win');
+  if (win) win.textContent = 'KSh ' + (stake * totalOdds).toFixed(2);
+}
+
+function vfClearSlip() {
+  vfState.slip = {};
+  vfRenderMatches();
+  vfRenderSlip();
+}
+
+function vfPlaceBet() {
+  if (vfState.phase !== 'betting') { showToast('Betting is closed for this round', 'error'); return; }
+  const sels = Object.values(vfState.slip);
+  if (sels.length === 0) { showToast('Select at least one match', 'error'); return; }
+  const stake = parseFloat($('vf-stake')?.value);
+  if (!stake || stake < 50) { showToast('Minimum stake is KSh 50', 'error'); return; }
+  if (stake > state.balance) { showToast('Insufficient balance', 'error'); return; }
+
+  const totalOdds = parseFloat(sels.reduce((a,b) => a*b.odd, 1).toFixed(2));
+  const potWin = parseFloat((stake * totalOdds).toFixed(2));
+
+  state.balance -= stake;
+  updateBalances();
+
+  const ticket = {
+    id: Date.now(), round: vfState.round,
+    selections: sels.map(s => ({ matchId: s.matchId, pick: s.pick, odd: s.odd, label: s.label, home: s.home, away: s.away })),
+    stake, totalOdds, potWin, settled: false, won: null, winAmount: 0
+  };
+  vfState.tickets.unshift(ticket);
+  vfState.slip = {};
+  if ($('vf-stake')) $('vf-stake').value = '';
+  vfRenderMatches();
+  vfRenderSlip();
+  vfRenderTickets();
+  showToast(`✅ Bet placed! Potential win: KSh ${potWin.toLocaleString()}`, 'success');
+}
+
+function vfRenderTickets() {
+  const el = $('vf-tickets-list');
+  if (!el) return;
+  if (vfState.tickets.length === 0) { el.innerHTML = '<div style="color:var(--text2);font-size:13px">No tickets yet</div>'; return; }
+  el.innerHTML = vfState.tickets.slice(0,10).map(t => `
+    <div style="background:var(--bg2);border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid ${t.settled?(t.won?'var(--green)':'#ff4757'):'var(--border)'}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:12px;color:var(--text2)">Round #${t.round} • ${t.selections.length} pick${t.selections.length>1?'s':''}</span>
+        <span style="font-size:12px;font-weight:700;color:${t.settled?(t.won?'var(--green)':'#ff4757'):'var(--text2)'}">${t.settled?(t.won?'✅ WON':'❌ LOST'):'⏳ Pending'}</span>
+      </div>
+      ${t.selections.map(s=>`<div style="font-size:12px;color:var(--text2)">${s.home} vs ${s.away} → <strong>${s.label}</strong> @ ${s.odd}</div>`).join('')}
+      <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+        <span style="font-size:12px;color:var(--text2)">Stake: <strong>KSh ${t.stake}</strong></span>
+        <span style="font-size:12px;color:var(--text2)">Odds: <strong>${t.totalOdds}</strong></span>
+        <span style="font-size:12px;color:${t.won?'var(--green)':'var(--text2)'}">${t.settled?(t.won?'Won: KSh '+t.winAmount:'Lost'):'Pot: KSh '+t.potWin}</span>
+      </div>
+    </div>`).join('');
 }
 function openGame(game) {
   state.currentGame = game;
