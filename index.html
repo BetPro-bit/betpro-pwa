@@ -1924,8 +1924,11 @@ function openGame(game) {
     av2RenderHistory();
     setTimeout(() => {
       av2InitCanvas();
-      if (AV2.phase === 'waiting') av2StartBetting();
-    }, 100);
+      // Always start if not already running
+      if (AV2.phase === 'idle' || AV2.phase === 'waiting') {
+        av2StartBetting();
+      }
+    }, 200);
   }
   if (game === 'mines') renderMinesGrid();
   if (game === 'wheel') { renderWheel(); renderWheelLegend(); }
@@ -2426,7 +2429,7 @@ function renderProfile() {
 
 // ── BetPro Aviator ────────────────────────────────────────────────────────────
 const AV2 = {
-  phase: 'idle', // idle|betting|flying|crashed
+  phase: 'idle', // idle|betting|flying|crashed|waiting
   mult: 1.0, crashAt: 1.0,
   interval: null, betInterval: null,
   betCountdown: 10,
@@ -2550,7 +2553,7 @@ function av2SetPhase(phase, label, cls) {
 
 function av2SetMult(val, cls='') {
   const el = $('av2-mult');
-  if (!el) return;
+  if (!el) { console.warn('av2-mult element not found'); return; }
   el.textContent = typeof val === 'number' ? val.toFixed(2) + 'x' : val;
   el.className = 'av2-mult' + (cls ? ' '+cls : '');
 }
@@ -2587,6 +2590,8 @@ function av2UpdateSlotUI() {
 }
 
 function av2StartBetting() {
+  // Reinit canvas if not ready
+  if (!AV2.canvas || !AV2.ctx) av2InitCanvas();
   AV2.phase = 'betting';
   AV2.points = []; AV2.mult = 1.0;
   AV2.slots.forEach(s => { s.active = false; s.stake = 0; s.auto = 0; s.cashedOut = false; });
