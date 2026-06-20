@@ -753,11 +753,11 @@
     </div>
     <div id="chat-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--bg)">
       <div class="chat-msg support">
-        <div class="chat-bubble support-bubble">👋 Hi! I'm BetPro's AI assistant. I can help with placing bets, M-Pesa deposits (STK Push & Paybill 400200), withdrawals, and account issues. What do you need?</div>
+        <div class="chat-bubble support-bubble">👋 Hi! I'm BetPro's AI assistant. I can help with placing bets, M-Pesa deposits (STK Push & Buy Goods 3488107), withdrawals, and account issues. What do you need?</div>
         <div class="chat-time">🤖 BetPro AI</div>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
-        <button onclick="quickAsk('How do I deposit via Paybill?')" style="background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:12px;color:var(--text2);cursor:pointer">💳 Paybill deposit</button>
+        <button onclick="quickAsk('How do I deposit via Buy Goods?')" style="background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:12px;color:var(--text2);cursor:pointer">💳 Buy Goods deposit</button>
         <button onclick="quickAsk('My withdrawal is delayed')" style="background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:12px;color:var(--text2);cursor:pointer">⏳ Withdrawal delay</button>
         <button onclick="quickAsk('How do I place an accumulator bet?')" style="background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:12px;color:var(--text2);cursor:pointer">⚽ Accumulator bet</button>
         <button onclick="quickAsk('I cannot log in to my account')" style="background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:12px;color:var(--text2);cursor:pointer">🔑 Login issue</button>
@@ -775,7 +775,7 @@
   <div id="tab-virtual" class="main-content hidden">
     <div style="padding:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <div><div style="font-size:20px;font-weight:800">🕹️ Virtual Football</div><div style="font-size:12px;color:var(--text2)">New round every 90 seconds</div></div>
+        <div><div style="font-size:20px;font-weight:800">⚽ BetPro EPL</div><div style="font-size:12px;color:var(--text2)">New round every 90 seconds</div></div>
         <div style="text-align:right"><div style="font-size:11px;color:var(--text2)">Round</div><div style="font-size:18px;font-weight:800;color:var(--green)" id="vf-round-num">#1</div></div>
       </div>
       <div style="background:var(--bg2);border-radius:14px;padding:14px;margin-bottom:14px;border:1px solid var(--border)">
@@ -790,7 +790,7 @@
       <div id="vf-matches"></div>
       <div id="vf-slip" style="display:none;position:sticky;bottom:70px;background:var(--bg2);border:1px solid var(--green);border-radius:14px;padding:14px;margin-top:12px;z-index:100">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <span style="font-weight:800;font-size:15px">🎟 Virtual Slip (<span id="vf-slip-count">0</span>)</span>
+          <span style="font-weight:800;font-size:15px">🎟 EPL Slip (<span id="vf-slip-count">0</span>/6 min)</span>
           <button onclick="vfClearSlip()" style="background:none;border:none;color:var(--red);font-size:12px;cursor:pointer;font-weight:700">Clear All</button>
         </div>
         <div id="vf-slip-items" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
@@ -798,7 +798,7 @@
           <span style="color:var(--text2)">Total Odds</span><span style="font-weight:800" id="vf-total-odds">0.00</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <input id="vf-stake" type="number" placeholder="Stake (min KSh 50)" class="form-input" style="flex:1" oninput="vfUpdateWin()" min="50"/>
+          <input id="vf-stake" type="number" placeholder="Stake (min KSh 20)" class="form-input" style="flex:1" oninput="vfUpdateWin()" min="50"/>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:12px">
           <span style="color:var(--text2)">Potential Win</span>
@@ -820,7 +820,7 @@
     <div class="tab-bar">
       <button class="tab-item active" id="tabbar-home" onclick="switchTab('home')"><span class="tab-icon">🏠</span><span class="tab-label">Home</span></button>
       <button class="tab-item" id="tabbar-sports" onclick="switchTab('sports')"><span class="tab-icon">⚽</span><span class="tab-label">Sports</span></button>
-      <button class="tab-item" id="tabbar-virtual" onclick="switchTab('virtual')"><span class="tab-icon">🕹️</span><span class="tab-label">Virtual</span></button>
+      <button class="tab-item" id="tabbar-virtual" onclick="switchTab('virtual')"><span class="tab-icon">⚽</span><span class="tab-label">EPL</span></button>
       <button class="tab-item" id="tabbar-wallet" onclick="switchTab('wallet')"><div class="tab-deposit"><span>+ Deposit</span></div></button>
       <button class="tab-item" id="tabbar-casino" onclick="switchTab('casino')"><span class="tab-icon">🎮</span><span class="tab-label">Casino</span></button>
       <button class="tab-item" id="tabbar-profile" onclick="switchTab('profile')"><span class="tab-icon">👤</span><span class="tab-label">Profile</span></button>
@@ -1014,9 +1014,9 @@
           <div style="font-size:12px;font-weight:700;color:var(--green)">STK Push</div>
           <div style="font-size:10px;color:var(--text2)">PIN prompt on phone</div>
         </div>
-        <div id="method-paybill" onclick="setDepositMethod('paybill')" style="flex:1;padding:10px;border-radius:10px;border:2px solid var(--border);background:var(--bg3);text-align:center;cursor:pointer">
+        <div id="method-buygoods" onclick="setDepositMethod('buygoods')" style="flex:1;padding:10px;border-radius:10px;border:2px solid var(--border);background:var(--bg3);text-align:center;cursor:pointer">
           <div style="font-size:18px">🏦</div>
-          <div style="font-size:12px;font-weight:700;color:var(--text2)">Paybill</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text2)">Buy Goods</div>
           <div style="font-size:10px;color:var(--text2)">Pay manually via M-Pesa</div>
         </div>
       </div>
@@ -1045,22 +1045,22 @@
         <div class="modal-note">You will receive an M-Pesa STK push. Enter your PIN to confirm.</div>
       </div>
 
-      <!-- Paybill section -->
-      <div id="paybill-section" style="display:none">
+      <!-- Buy Goods section -->
+      <div id="buygoods-section" style="display:none">
         <div style="background:var(--bg3);border-radius:12px;padding:16px;margin-bottom:16px">
           <div style="font-size:12px;color:var(--text2);margin-bottom:12px;font-weight:600">Follow these steps on your phone:</div>
           <div style="display:flex;flex-direction:column;gap:10px">
             <div style="display:flex;align-items:center;gap:10px">
               <div style="width:24px;height:24px;border-radius:50%;background:var(--green);color:#000;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
-              <span style="font-size:13px;color:var(--text)">Go to <strong>M-Pesa → Lipa na M-Pesa → Pay Bill</strong></span>
+              <span style="font-size:13px;color:var(--text)">Go to <strong>M-Pesa → Lipa na M-Pesa → Buy Goods</strong></span>
             </div>
             <div style="display:flex;align-items:center;gap:10px">
               <div style="width:24px;height:24px;border-radius:50%;background:var(--green);color:#000;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
-              <span style="font-size:13px;color:var(--text)">Business No: <strong style="color:var(--green);font-size:15px">400200</strong></span>
+              <span style="font-size:13px;color:var(--text)">Buy Goods No: <strong style="color:var(--green);font-size:15px">3488107</strong></span>
             </div>
             <div style="display:flex;align-items:center;gap:10px">
               <div style="width:24px;height:24px;border-radius:50%;background:var(--green);color:#000;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
-              <span style="font-size:13px;color:var(--text)">Account No: <strong style="color:var(--green);font-size:15px" id="paybill-account">your phone</strong></span>
+              <span style="font-size:13px;color:var(--text)">Account No: <strong style="color:var(--green);font-size:15px" id="buygoods-account">your phone</strong></span>
             </div>
             <div style="display:flex;align-items:center;gap:10px">
               <div style="width:24px;height:24px;border-radius:50%;background:var(--green);color:#000;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
@@ -1070,10 +1070,10 @@
         </div>
         <div style="background:rgba(0,255,135,0.08);border:1px solid var(--green);border-radius:10px;padding:12px;text-align:center;margin-bottom:16px">
           <div style="font-size:11px;color:var(--text2);margin-bottom:4px">Your Account Reference</div>
-          <div style="font-size:20px;font-weight:800;color:var(--green);letter-spacing:2px" id="paybill-ref-display">—</div>
+          <div style="font-size:20px;font-weight:800;color:var(--green);letter-spacing:2px" id="buygoods-ref-display">—</div>
           <div style="font-size:11px;color:var(--text3);margin-top:4px">Use this exact number as Account No</div>
         </div>
-        <button class="btn btn-green" onclick="checkPaybillPayment()">✅ I've Paid — Check Now</button>
+        <button class="btn btn-green" onclick="checkBuyGoodsPayment()">✅ I've Paid — Check Now</button>
         <div class="modal-note">Your balance will update automatically once payment is confirmed.</div>
       </div>
 
@@ -1441,6 +1441,7 @@ const VF_TEAMS = [
 ];
 const VF_SCORES = ['0-0','1-0','2-0','2-1','3-1','3-0','1-1','2-2','0-1','1-2','0-2','1-3','1-0','2-1','1-0','2-0'];
 const VF_ROUND_DURATION = 90;
+const VF_NEXT_ROUND_WINDOW = 10; // seconds to place bets for next round before it starts
 
 let vfState = {
   round: 1, matches: [], slip: {}, tickets: [],
@@ -1458,20 +1459,21 @@ function vfInit() {
 
 function vfGenerateOdds(type) {
   const r = () => Math.random();
+  const cap = (v, min, max) => +Math.min(max, Math.max(min, v)).toFixed(2);
   if (type === 'home') return {
-    home: +(1.30 + r()*0.50).toFixed(2),
-    draw: +(3.50 + r()*2.00).toFixed(2),
-    away: +(4.50 + r()*4.50).toFixed(2)
+    home: cap(1.10 + r()*0.50, 1.10, 1.65),
+    draw: cap(2.50 + r()*0.50, 2.50, 3.10),
+    away: cap(2.40 + r()*0.60, 2.40, 3.10)
   };
   if (type === 'balanced') return {
-    home: +(2.00 + r()*0.80).toFixed(2),
-    draw: +(2.80 + r()*1.00).toFixed(2),
-    away: +(2.00 + r()*0.80).toFixed(2)
+    home: cap(1.80 + r()*0.50, 1.80, 2.40),
+    draw: cap(2.60 + r()*0.40, 2.60, 3.10),
+    away: cap(1.80 + r()*0.50, 1.80, 2.40)
   };
-  return { // underdog
-    home: +(4.00 + r()*4.00).toFixed(2),
-    draw: +(3.20 + r()*1.80).toFixed(2),
-    away: +(1.20 + r()*0.60).toFixed(2)
+  return { // underdog/away fav
+    home: cap(2.40 + r()*0.60, 2.40, 3.10),
+    draw: cap(2.50 + r()*0.50, 2.50, 3.10),
+    away: cap(1.10 + r()*0.50, 1.10, 1.65)
   };
 }
 
@@ -1523,8 +1525,17 @@ function vfNewRound() {
 function vfTick() {
   vfState.timeLeft--;
   vfUpdateTimer();
-  if (vfState.timeLeft <= 0) {
+  if (vfState.phase === 'betting' && vfState.timeLeft <= 0) {
+    // Betting closed — show 10s window to prep next round bets
+    vfState.phase = 'next_window';
+    vfState.timeLeft = VF_NEXT_ROUND_WINDOW;
+    vfRenderMatches(); // lock current round odds
+    const label = $('vf-phase-label');
+    if (label) { label.textContent = '⏭ Bet on NEXT round now!'; label.style.color = '#ffd700'; }
+    // Show next round preview slip stays open
+  } else if (vfState.phase === 'next_window' && vfState.timeLeft <= 0) {
     clearInterval(vfState.timer);
+    // Move any pending slip bets to next round ticket (saved already via vfPlaceBet)
     vfSimulateResults();
   }
 }
@@ -1537,19 +1548,21 @@ function vfUpdateTimer() {
   const label = $('vf-phase-label');
   if (!el) return;
   el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
-  const pct = (vfState.timeLeft / VF_ROUND_DURATION) * 100;
+  const maxTime = vfState.phase === 'next_window' ? VF_NEXT_ROUND_WINDOW : VF_ROUND_DURATION;
+  const pct = (vfState.timeLeft / maxTime) * 100;
   if (prog) prog.style.width = pct + '%';
-  const isWarning = t <= 20;
-  const color = isWarning ? '#ff4757' : 'var(--green)';
+  const isWarning = t <= 20 && vfState.phase === 'betting';
+  const isNextWindow = vfState.phase === 'next_window';
+  const color = isNextWindow ? '#ffd700' : isWarning ? '#ff4757' : 'var(--green)';
   el.style.color = color;
   if (prog) prog.style.background = color;
-  if (label) {
-    label.textContent = vfState.phase === 'betting'
-      ? (isWarning ? '⚠️ Betting closes soon!' : '🟢 Betting Open')
-      : '⏳ Settling bets...';
+  if (label && vfState.phase === 'betting') {
+    label.textContent = isWarning ? '⚠️ Betting closes soon!' : '🟢 Betting Open';
     label.style.color = color;
   }
 }
+
+
 
 function vfSimulateResult(match) {
   // Weighted probability based on odds (lower odds = higher chance)
@@ -1603,18 +1616,11 @@ function vfSimulateResults() {
   // Settle tickets
   vfSettleTickets(results);
 
-  // Next round after 10 seconds
-  let countdown = 10;
-  const nextLabel = $('vf-phase-label');
-  const nextTimer = setInterval(() => {
-    countdown--;
-    if (nextLabel) nextLabel.textContent = `⏭ Next round in ${countdown}s...`;
-    if (countdown <= 0) {
-      clearInterval(nextTimer);
-      vfState.round++;
-      vfNewRound();
-    }
-  }, 1000);
+  // Start next round immediately after results
+  setTimeout(() => {
+    vfState.round++;
+    vfNewRound();
+  }, 3000);
 }
 
 function vfSettleTickets(results) {
@@ -1736,11 +1742,13 @@ function vfClearSlip() {
 }
 
 function vfPlaceBet() {
-  if (vfState.phase !== 'betting') { showToast('Betting is closed for this round', 'error'); return; }
+  if (vfState.phase !== 'betting' && vfState.phase !== 'next_window') {
+    showToast('Betting is closed. Wait for the next round.', 'error'); return;
+  }
   const sels = Object.values(vfState.slip);
-  if (sels.length === 0) { showToast('Select at least one match', 'error'); return; }
+  if (sels.length < 6) { showToast(`Select at least 6 matches (${sels.length}/6 selected)`, 'error'); return; }
   const stake = parseFloat($('vf-stake')?.value);
-  if (!stake || stake < 50) { showToast('Minimum stake is KSh 50', 'error'); return; }
+  if (!stake || stake < 20) { showToast('Minimum stake is KSh 20', 'error'); return; }
   if (stake > state.balance) { showToast('Insufficient balance', 'error'); return; }
 
   const totalOdds = parseFloat(sels.reduce((a,b) => a*b.odd, 1).toFixed(2));
@@ -1749,8 +1757,10 @@ function vfPlaceBet() {
   state.balance -= stake;
   updateBalances();
 
+  // If placing during next_window, tag it for next round
+  const roundNum = vfState.phase === 'next_window' ? vfState.round : vfState.round;
   const ticket = {
-    id: Date.now(), round: vfState.round,
+    id: Date.now(), round: roundNum,
     selections: sels.map(s => ({ matchId: s.matchId, pick: s.pick, odd: s.odd, label: s.label, home: s.home, away: s.away })),
     stake, totalOdds, potWin, settled: false, won: null, winAmount: 0
   };
@@ -2113,16 +2123,16 @@ async function renderWallet() {
     }
   }
 }
-const PAYBILL_NUMBER = '400200';
-const PAYBILL_STORE = '1172450';
+const BUGOODS_NUMBER = '3488107';
+const BUYGOODS_STORE = '1172450';
 let depositMethod = 'stk';
 
 function setDepositMethod(method) {
   depositMethod = method;
   const stkEl = $('stk-section');
-  const pbEl = $('paybill-section');
+  const pbEl = $('buygoods-section');
   const stkBtn = $('method-stk');
-  const pbBtn = $('method-paybill');
+  const pbBtn = $('method-buygoods');
   if (method === 'stk') {
     stkEl.style.display = '';
     pbEl.style.display = 'none';
@@ -2144,8 +2154,8 @@ function setDepositMethod(method) {
     // Show user's phone as account reference
     const phone = state.user?.phone || state.user?.user_metadata?.phone || '';
     const ref = phone.replace(/^\+?254/, '0').replace(/^0+/, '0') || 'your phone';
-    if ($('paybill-ref-display')) $('paybill-ref-display').textContent = ref;
-    if ($('paybill-account')) $('paybill-account').textContent = ref;
+    if ($('buygoods-ref-display')) $('buygoods-ref-display').textContent = ref;
+    if ($('buygoods-account')) $('buygoods-account').textContent = ref;
   }
 }
 
@@ -2154,14 +2164,14 @@ function openDepositModal() {
   $('deposit-modal').classList.remove('hidden');
   // Reset to STK view
   if ($('stk-section')) $('stk-section').style.display = '';
-  if ($('paybill-section')) $('paybill-section').style.display = 'none';
+  if ($('buygoods-section')) $('buygoods-section').style.display = 'none';
 }
 function closeDepositModal() { $('deposit-modal').classList.add('hidden'); }
 
-async function checkPaybillPayment() {
+async function checkBuyGoodsPayment() {
   showToast('⏳ Checking payment...', 'info', 3000);
   try {
-    const res = await fetch(API + '/api/payments/paybill/check', {
+    const res = await fetch(API + '/api/payments/buygoods/check', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.token },
       body: JSON.stringify({ phone: state.user?.phone || '' })
@@ -2170,7 +2180,7 @@ async function checkPaybillPayment() {
     if (data.success && data.amount) {
       state.balance += data.amount;
       await saveUserBalance();
-      state.transactions.unshift({ type:'deposit', icon:'💰', desc:'Paybill Deposit', amount: data.amount, date: new Date().toISOString().split('T')[0] });
+      state.transactions.unshift({ type:'deposit', icon:'💰', desc:'Buy Goods Deposit', amount: data.amount, date: new Date().toISOString().split('T')[0] });
       updateBalances(); renderWallet();
       closeDepositModal();
       showToast(`✅ KSh ${data.amount.toLocaleString()} added to your wallet!`, 'success');
@@ -2627,7 +2637,7 @@ let aiChatOpen = false;
 const AI_SYSTEM_PROMPT = `You are BetPro Support Assistant, a helpful AI for the BetPro betting platform in Kenya.
 You help users with:
 - Betting: how to place bets, understanding odds, 1X2, GG/NG, Over/Under 2.5, Corners markets, accumulator bets, bet slip
-- Deposits: M-Pesa STK Push (instant PIN prompt) and Paybill (Business No: 400200, Account: user phone number)
+- Deposits: M-Pesa STK Push (instant PIN prompt) and Buy Goods (Buy Goods No: 3488107, Account: user phone number)
 - Withdrawals: minimum KSh 100, sent to M-Pesa, takes a few minutes
 - Account: registration with phone number, login issues, password reset
 - Games: Crash, Dice, Mines, Plinko available in the casino section
