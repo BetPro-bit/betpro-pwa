@@ -2448,13 +2448,16 @@ const AV2_NAMES = ['James','Mary','Ali','Grace','Kevin','Amina','Brian','Fatuma'
 // Crash point generated SERVER-SIDE when logged in
 // Falls back to local generation for demo/offline mode
 function av2LocalCrash() {
+  // Per spec probability distribution
   const r = Math.floor(Math.random() * 100);
-  if (r < 60) return +(1.00 + Math.random() * 0.50).toFixed(2);
-  if (r < 80) return +(1.51 + Math.random() * 0.49).toFixed(2);
-  if (r < 90) return +(2.01 + Math.random() * 0.99).toFixed(2);
-  if (r < 95) return +(3.01 + Math.random() * 1.99).toFixed(2);
-  if (r < 99) return +(5.01 + Math.random() * 1.99).toFixed(2);
-  return +(7.01 + Math.random() * 2.99).toFixed(2);
+  let val;
+  if (r < 60) val = 1.00 + Math.random() * 0.50;       // 60%: 1.00-1.50
+  else if (r < 80) val = 1.51 + Math.random() * 0.49;  // 20%: 1.51-2.00
+  else if (r < 90) val = 2.01 + Math.random() * 0.99;  // 10%: 2.01-3.00
+  else if (r < 95) val = 3.01 + Math.random() * 1.99;  //  5%: 3.01-5.00
+  else if (r < 99) val = 5.01 + Math.random() * 1.99;  //  4%: 5.01-7.00
+  else val = 7.01 + Math.random() * 2.99;               //  1%: 7.01-10.00
+  return parseFloat(val.toFixed(2)); // always return number
 }
 
 function av2GenFakePlayers() {
@@ -2654,14 +2657,23 @@ async function av2StartFlight() {
 
   av2GenFakePlayers();
   av2SetPhase('flying', '✈️ Flying', 'flying');
-  AV2.mult = 1.0; AV2.points = [1.0]; AV2.crashAt = null;
+  AV2.mult = 1.0; AV2.points = [1.0];
+
+  // Set crash point now — from backend roundId or local fallback
+  // This is the SINGLE crash point used for the whole round
+  if (!AV2.roundId) {
+    AV2.crashAt = parseFloat(av2LocalCrash());
+  }
+  // If roundId exists, crashAt stays null — server validates on cashout/crash
+
   const cdEl = $('av2-countdown'); if (cdEl) cdEl.textContent = '';
   av2UpdateSlotUI();
   av2RenderPlayers();
 
+  console.log('Round started. CrashAt (local):', AV2.crashAt, '| RoundId:', AV2.roundId);
+
   AV2.interval = setInterval(() => {
     AV2.mult = +(AV2.mult + 0.015 + AV2.mult * 0.010).toFixed(3);
-    if (AV2.mult > 10) AV2.mult = 10;
     AV2.points.push(AV2.mult);
     av2SetMult(AV2.mult);
     av2DrawGraph();
@@ -2677,22 +2689,23 @@ async function av2StartFlight() {
       if (s.active && !s.cashedOut && s.auto > 0 && AV2.mult >= s.auto) av2CashOut(s.id);
     });
 
-    // Check crash: use local fallback if no backend roundId
-    const localLimit = AV2._localCrash ? parseFloat(AV2._localCrash) : 10;
-    if (AV2.mult >= localLimit) { clearInterval(AV2.interval); av2Crash(); }
+    // Crash check
+    const crashLimit = AV2.roundId ? 10 : AV2.crashAt; // server handles crash if roundId
+    if (AV2.mult >= crashLimit) { clearInterval(AV2.interval); av2Crash(); }
   }, 80);
 }
 
 async function av2Crash() {
   av2SetPhase('crashed', '💥 CRASHED!', 'crashed');
-  av2SetMult(AV2.crashAt, 'crashed');
+  if (AV2.crashAt) av2SetMult(AV2.crashAt, 'crashed');
+  else av2SetMult(AV2.mult, 'crashed');
   const cdEl = $('av2-countdown'); if (cdEl) cdEl.textContent = '';
   av2DrawGraph();
 
   AV2.slots.forEach(s => {
     const status = $('av-status-'+s.id);
     if (s.active && !s.cashedOut) {
-      if (status) { status.textContent = `Lost KSh ${s.stake} — crashed at ${AV2.crashAt}x`; status.style.color = '#ff2200'; }
+      if (status) { status.textContent = `Lost KSh ${s.stake} — crashed at ${(AV2.crashAt||AV2.mult).toFixed(2)}x`; status.style.color = '#ff2200'; }
       const slot = $('av-slot-'+s.id); if (slot) slot.className = 'av-slot lost';
       s.active = false;
     }
