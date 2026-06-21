@@ -2100,8 +2100,7 @@ function updateBalances() {
   $('home-balance').textContent = 'KSh ' + bal;
   $('wallet-balance').textContent = 'KSh ' + bal;
   $('profile-balance').textContent = 'KSh ' + bal;
-  saveSession();
-  saveUserBalance();
+  saveSession(); // only save session/localStorage, NOT Supabase
 }
 function updateGameBalances() {
   ['av','mines','wheel','dice','plinko'].forEach(g => {
