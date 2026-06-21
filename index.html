@@ -2703,19 +2703,27 @@ async function av2Crash() {
     }
   } catch(e) { console.error('Crash settle error:', e.message); }
 
-  if (AV2.crashAt) {
-    AV2.history.unshift(parseFloat(AV2.crashAt));
-    AV2.history = AV2.history.slice(0, 20);
-    av2RenderHistory();
-  }
+  // Add to history
+  const crashVal = AV2.crashAt || AV2.mult;
+  AV2.history.unshift(parseFloat(crashVal.toFixed ? crashVal.toFixed(2) : crashVal));
+  AV2.history = AV2.history.slice(0, 20);
+  av2RenderHistory();
   av2UpdateSlotUI();
-  await saveUserBalance();
-  updateGameBalances(); updateBalances();
 
-  // Reset for next round
+  // Save balance safely — never block restart
+  try { await saveUserBalance(); } catch(e) { console.warn('Balance save failed:', e.message); }
+  try { updateGameBalances(); updateBalances(); } catch(e) {}
+
+  // Reset and restart next round
   AV2.crashAt = null;
   AV2.roundId = null;
-  setTimeout(av2StartBetting, 4000);
+  AV2.interval = null;
+
+  setTimeout(() => {
+    if ($('screen-aviator') && $('screen-aviator').classList.contains('active')) {
+      av2StartBetting();
+    }
+  }, 4000);
 }
 
 async function av2Bet(slotId) {
