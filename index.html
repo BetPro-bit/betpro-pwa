@@ -1518,13 +1518,8 @@ async function loadSession() {
   if (token && phone && userId) {
     state.token = token;
     state.user = { phone, id: userId };
-    // Always fetch fresh balance from Supabase on load
-    try {
-      await loadUserBalance(userId);
-    } catch(e) {
-      // Fallback to cached balance if offline
-      state.balance = parseFloat(localStorage.getItem('bp_balance')) || 0;
-    }
+    // Always fetch fresh from Supabase
+    await loadUserBalance(userId);
     return true;
   }
   return false;
