@@ -524,7 +524,7 @@
         </div>
         <div class="check-row" onclick="toggleTerms()">
           <div class="checkbox" id="terms-check"></div>
-          <div class="terms-text">I agree to the <span class="link">Terms & Conditions</span> and confirm I am 18+ years old</div>
+          <div class="terms-text">I agree to the <span class="link" onclick="showTermsModal(event)">Terms & Conditions</span> and confirm I am 18+ years old</div>
         </div>
         <button class="btn btn-green" id="reg-btn" onclick="handleRegister()">Create Account & Verify →</button>
         <div class="text-center text-sm">Already have an account? <span class="link" onclick="showScreen('login')">Sign In</span></div>
@@ -2093,6 +2093,13 @@ function toggleTerms() {
   $('terms-check').className = 'checkbox' + (state.terms ? ' checked' : '');
   $('terms-check').innerHTML = state.terms ? '✓' : '';
 }
+function showTermsModal(e) {
+  if (e) e.stopPropagation();
+  $('terms-modal').classList.remove('hidden');
+}
+function hideTermsModal() {
+  $('terms-modal').classList.add('hidden');
+}
 
 // ── Balance ────────────────────────────────────────────────────────────────────
 function updateBalances() {
@@ -3289,5 +3296,85 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+  <!-- Terms & Conditions Modal -->
+  <div class="modal-overlay hidden" id="terms-modal" onclick="if(event.target===this)hideTermsModal()">
+    <div class="modal" style="max-height:85vh;display:flex;flex-direction:column;padding:0;overflow:hidden">
+      <div style="padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+        <div style="font-size:16px;font-weight:800">📋 Terms & Conditions</div>
+        <button class="modal-close" onclick="hideTermsModal()">✕</button>
+      </div>
+      <div style="overflow-y:auto;padding:16px;flex:1;font-size:13px;color:var(--text2);line-height:1.7">
+        <div style="text-align:center;margin-bottom:16px">
+          <div style="font-size:22px;font-weight:900;color:var(--green)">BETPRO WIN</div>
+          <div style="font-size:13px;color:var(--text2)">Terms and Conditions</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">Effective Date: 21 June 2026</div>
+        </div>
+        <p style="margin-bottom:16px;color:var(--text)">Welcome to BetPro Win. By accessing or using our platform, you agree to be bound by the following Terms and Conditions. If you do not agree, please do not use the service.</p>
+
+        <div style="margin-bottom:14px">
+          <div style="font-weight:800;color:var(--text);margin-bottom:6px">1. Eligibility</div>
+          <p>You must be at least 18 years old (or the legal gambling age in your jurisdiction, whichever is higher) to use BetPro Win. By using this platform, you confirm that you meet this requirement.</p>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <div style="font-weight:800;color:var(--text);margin-bottom:6px">2. Account Registration</div>
+          <p>• Users must provide accurate and complete information during registration.<br>• You are responsible for maintaining the confidentiality of your account credentials.<br>• BetPro Win is not responsible for any unauthorized access to your account.</p>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <div style="font-weight:800;color:var(--text);margin-bottom:6px">3. Use of the Platform</div>
+          <p>• The platform is for entertainment and betting purposes only.<br>• Users agree not to misuse the platform, including fraud, hacking, or manipulation of results.<br>• Any attempt to exploit system errors will result in account suspension or termination.</p>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <div style="font-weight:800;color:var(--text);margin-bottom:6px">4. Deposits and Withdrawals</div>
+          <p>• All deposits and withdrawals are processed through approved payment methods.<br>• BetPro Win is not responsible for delays caused by third-party payment providers.<br>• Users are responsible for ensuring correct payment details.</p>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <div style="font-weight:800;color:var(--text);margin-bottom:6px">5. Fair Play Policy</div>
+          <p>• BetPro Win uses automated systems to ensure fairness and transparency.<br>• Any suspicious activity may lead to account review and possible suspension.<br>• We reserve the right to cancel bets that appear fraudulent or invalid.</p>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <div style="font-weight:800;color:var(--text);margin-bottom:6px">6. Bonuses and Promotions</div>
+          <p>• Bonuses are subject to specific wagering requirements.<br>• BetPro Win reserves the right to modify or cancel promotions at any time without prior notice.</p>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <div style="font-weight:800;color:var(--text);margin-bottom:6px">7. Responsible Gambling</div>
+          <p>• Betting should be done responsibly.<br>• Users are encouraged to set limits and avoid gambling beyond their means.<br>• If you feel you may have a gambling problem, seek help from professional support services.</p>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <div style="font-weight:800;color:var(--text);margin-bottom:6px">8. Limitation of Liability</div>
+          <p>BetPro Win is not liable for any financial losses, damages, or disruptions resulting from the use of the platform.</p>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <div style="font-weight:800;color:var(--text);margin-bottom:6px">9. Termination</div>
+          <p>We reserve the right to suspend or permanently terminate any account that violates these Terms.</p>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <div style="font-weight:800;color:var(--text);margin-bottom:6px">10. Changes to Terms</div>
+          <p>BetPro Win may update these Terms at any time. Continued use of the platform means you accept the updated Terms.</p>
+        </div>
+
+        <div style="margin-bottom:20px">
+          <div style="font-weight:800;color:var(--text);margin-bottom:6px">11. Contact Information</div>
+          <p>For support or inquiries, contact:<br>📧 <a href="mailto:betprowincompany@gmail.com" style="color:var(--green)">betprowincompany@gmail.com</a></p>
+        </div>
+
+        <div style="background:rgba(0,255,135,0.08);border:1px solid var(--green);border-radius:10px;padding:12px;text-align:center;font-size:12px;color:var(--text2)">
+          🔞 BetPro Win promotes responsible gambling. Must be 18+ to play.
+        </div>
+      </div>
+      <div style="padding:12px;border-top:1px solid var(--border);flex-shrink:0">
+        <button class="btn btn-green" onclick="hideTermsModal()">I Understand</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
