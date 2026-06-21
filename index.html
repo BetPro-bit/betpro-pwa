@@ -2601,21 +2601,17 @@ function av2StartBetting() {
   AV2.phase = 'betting';
   AV2.points = []; AV2.mult = 1.0;
   AV2.slots.forEach(s => { s.active = false; s.stake = 0; s.auto = 0; s.cashedOut = false; });
-  av2SetPhase('betting', '🟡 Betting Open', 'betting');
+  av2SetPhase('betting', '🟡 Place Your Bet', 'betting');
   av2SetMult('Place Bet', 'betting');
   av2UpdateSlotUI();
   [1,2,3].forEach(i => {
     const st = $('av-status-'+i); if (st) { st.textContent = 'Place bet now'; st.style.color = '#ffd700'; }
   });
-
-  let cd = 10;
   const cdEl = $('av2-countdown');
-  if (cdEl) cdEl.textContent = cd + 's';
-  AV2.betInterval = setInterval(() => {
-    cd--;
-    if (cdEl) cdEl.textContent = cd > 0 ? cd + 's' : '';
-    if (cd <= 0) { clearInterval(AV2.betInterval); av2StartFlight(); }
-  }, 1000);
+  if (cdEl) cdEl.textContent = '';
+
+  // No countdown — player places bet and clicks Place Bet to launch
+  // Flight starts immediately when first bet is placed
 }
 
 async function av2StartFlight() {
@@ -2734,7 +2730,7 @@ function av2Crash() {
 
 
 async function av2Bet(slotId) {
-  if (AV2.phase !== 'betting') { showToast('Wait for next betting phase', 'error'); return; }
+  if (AV2.phase !== 'betting') { showToast('Wait for next round to place bet', 'error'); return; }
   const slot = AV2.slots.find(s => s.id === slotId);
   if (!slot || slot.active) return;
   const stake = parseFloat($('av-stake-'+slotId)?.value);
@@ -2742,16 +2738,17 @@ async function av2Bet(slotId) {
   if (!stake || stake < 10) { showToast('Minimum bet is KSh 10', 'error'); return; }
   if (stake > state.balance) { showToast('Insufficient balance', 'error'); return; }
 
-  // Pre-register bet on backend (deducts balance server-side)
-  // roundId is assigned when flight starts — store pending bets
   slot.stake = stake; slot.auto = auto; slot.active = true; slot.cashedOut = false;
-  slot.pendingBackend = true; // will be confirmed when flight starts
-
+  slot.pendingBackend = true;
   state.balance -= stake;
+
   const status = $('av-status-'+slotId);
-  if (status) { status.textContent = `✅ KSh ${stake} placed${auto ? ' — Auto @'+auto+'x' : ''}`; status.style.color = '#ff7800'; }
+  if (status) { status.textContent = '✅ KSh ' + stake + ' placed' + (auto ? ' — Auto @' + auto + 'x' : ''); status.style.color = '#ff7800'; }
   av2UpdateSlotUI(); updateGameBalances(); updateBalances();
-  showToast(`Bet ${slotId} placed — KSh ${stake}`, 'success', 2000);
+  showToast('Bet ' + slotId + ' placed — KSh ' + stake + ' 🚀', 'success', 2000);
+
+  // Start flight immediately on first bet placed
+  av2StartFlight();
 }
 
 async function av2CashOut(slotId) {
