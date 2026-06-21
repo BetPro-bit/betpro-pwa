@@ -662,8 +662,16 @@
           </div>
         </div>
         <div class="section mt-16">
-          <div class="section-header"><div class="section-title">📋 Recent Transactions</div></div>
-          <div id="txn-list"></div>
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <button id="wallet-tab-txn" onclick="switchWalletTab('txn')" style="flex:1;padding:8px;border-radius:8px;border:none;background:var(--green);color:#000;font-weight:700;font-size:13px;cursor:pointer">📋 Transactions</button>
+            <button id="wallet-tab-bets" onclick="switchWalletTab('bets')" style="flex:1;padding:8px;border-radius:8px;border:none;background:var(--bg3);color:var(--text2);font-weight:700;font-size:13px;cursor:pointer">🎟 My Bets</button>
+          </div>
+          <div id="wallet-txn-section">
+            <div id="txn-list"></div>
+          </div>
+          <div id="wallet-bets-section" style="display:none">
+            <div id="bets-list"><div style="text-align:center;color:var(--text2);padding:40px">No bets placed yet</div></div>
+          </div>
         </div>
       </div>
     </div>
@@ -2252,19 +2260,106 @@ function updateSlipWin() {
   const totalOdds = state.bets.reduce((a,b) => a*b.odd, 1);
   $('slip-win').textContent = 'KSh ' + (stake * totalOdds).toFixed(2);
 }
-function placeBet() {
+async function placeBet() {
   const stake = parseFloat($('slip-stake').value);
   if (!stake || stake < 22) { showToast('Minimum stake is KSh 22', 'error'); return; }
   if (stake > state.balance) { showToast('Insufficient balance', 'error'); return; }
-  const totalOdds = state.bets.reduce((a,b) => a*b.odd, 1);
-  state.balance -= stake;
-  state.bets = []; closeBetSlip();
+  if (state.bets.length === 0) { showToast('No selections', 'error'); return; }
+
+  const totalOdds = parseFloat(state.bets.reduce((a,b) => a*b.odd, 1).toFixed(2));
+  const potWin = parseFloat((stake * totalOdds).toFixed(2));
+
+  // Deduct balance
+  state.balance = parseFloat((state.balance - stake).toFixed(2));
+
+  // Build ticket object
+  const ticket = {
+    id: 'BET-' + Date.now(),
+    user_id: state.user?.id,
+    selections: state.bets.map(b => ({
+      matchId: b.matchId,
+      match: b.match,
+      selection: b.selection,
+      odd: b.odd
+    })),
+    stake,
+    total_odds: totalOdds,
+    potential_win: potWin,
+    status: 'pending',
+    placed_at: new Date().toISOString()
+  };
+
+  // Save to local history
+  if (!state.betHistory) state.betHistory = [];
+  state.betHistory.unshift(ticket);
+  state.betHistory = state.betHistory.slice(0, 50);
+
+  // Save to Supabase transactions table
+  if (state.user?.id) {
+    try {
+      await sb.from('transactions').insert({
+        user_id: state.user.id,
+        amount: -stake,
+        description: 'Sports Bet — ' + state.bets.length + ' selection' + (state.bets.length > 1 ? 's' : '') + ' @ ' + totalOdds + 'x',
+        status: 'pending',
+        checkout_id: ticket.id,
+        created_at: new Date()
+      });
+    } catch(e) { console.warn('Bet save error:', e.message); }
+  }
+
+  saveUserBalance().catch(e => {});
+  state.bets = [];
+  closeBetSlip();
   $('bet-slip-fab').classList.add('hidden');
   updateBalances(); renderMatches();
-  showToast(`🎉 Bet placed! Potential win: KSh ${(stake*totalOdds).toFixed(2)}`);
+  showToast('🎉 Bet placed! Potential win: KSh ' + potWin.toLocaleString());
 }
 
 // ── Wallet ─────────────────────────────────────────────────────────────────────
+function switchWalletTab(tab) {
+  $('wallet-txn-section').style.display = tab === 'txn' ? '' : 'none';
+  $('wallet-bets-section').style.display = tab === 'bets' ? '' : 'none';
+  $('wallet-tab-txn').style.background = tab === 'txn' ? 'var(--green)' : 'var(--bg3)';
+  $('wallet-tab-txn').style.color = tab === 'txn' ? '#000' : 'var(--text2)';
+  $('wallet-tab-bets').style.background = tab === 'bets' ? 'var(--green)' : 'var(--bg3)';
+  $('wallet-tab-bets').style.color = tab === 'bets' ? '#000' : 'var(--text2)';
+  if (tab === 'bets') renderBetHistory();
+}
+
+async function renderBetHistory() {
+  const el = $('bets-list');
+  if (!el) return;
+  const history = state.betHistory || [];
+  if (history.length === 0) {
+    el.innerHTML = '<div style="text-align:center;color:var(--text2);padding:40px">No bets placed yet</div>';
+    return;
+  }
+  el.innerHTML = history.map(t => {
+    const statusColor = t.status === 'won' ? 'var(--green)' : t.status === 'lost' ? '#ff4757' : '#ffd700';
+    const statusIcon = t.status === 'won' ? '✅ Won' : t.status === 'lost' ? '❌ Lost' : '⏳ Pending';
+    return `
+    <div style="background:var(--bg2);border-radius:12px;padding:12px;margin-bottom:10px;border:1px solid ${statusColor}33">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:11px;color:var(--text2)">${t.placed_at?.split('T')[0]} · ${t.selections?.length} pick${t.selections?.length>1?'s':''}</span>
+        <span style="font-size:12px;font-weight:800;color:${statusColor}">${statusIcon}</span>
+      </div>
+      ${(t.selections||[]).map(s => `
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border)">
+          <span style="color:var(--text2);flex:1">${s.match}</span>
+          <span style="color:var(--text);font-weight:700;margin:0 8px">${s.selection}</span>
+          <span style="color:var(--green);font-weight:800">${s.odd}</span>
+        </div>`).join('')}
+      <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px">
+        <span style="color:var(--text2)">Stake: <strong style="color:var(--text)">KSh ${t.stake}</strong></span>
+        <span style="color:var(--text2)">Odds: <strong style="color:var(--text)">${t.total_odds}x</strong></span>
+        <span style="color:${statusColor};font-weight:800">${t.status==='won'?'Won: KSh '+t.potential_win:'Pot: KSh '+t.potential_win}</span>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">Ref: ${t.id}</div>
+    </div>`;
+  }).join('');
+}
+
 async function renderWallet() {
   // Always fetch fresh balance from Supabase when wallet opens
   if (state.user?.id) loadUserBalance(state.user.id);
