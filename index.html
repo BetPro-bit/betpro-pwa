@@ -663,14 +663,14 @@
         </div>
         <div class="section mt-16">
           <div style="display:flex;gap:8px;margin-bottom:12px">
-            <button id="wallet-tab-txn" onclick="switchWalletTab('txn')" style="flex:1;padding:8px;border-radius:8px;border:none;background:var(--green);color:#000;font-weight:700;font-size:13px;cursor:pointer">📋 Transactions</button>
-            <button id="wallet-tab-bets" onclick="switchWalletTab('bets')" style="flex:1;padding:8px;border-radius:8px;border:none;background:var(--bg3);color:var(--text2);font-weight:700;font-size:13px;cursor:pointer">🎟 My Bets</button>
+            <button id="wallet-tab-bets" onclick="switchWalletTab('bets')" style="flex:1;padding:8px;border-radius:8px;border:none;background:var(--green);color:#000;font-weight:700;font-size:13px;cursor:pointer">🎟 My Bets</button>
+            <button id="wallet-tab-txn" onclick="switchWalletTab('txn')" style="flex:1;padding:8px;border-radius:8px;border:none;background:var(--bg3);color:var(--text2);font-weight:700;font-size:13px;cursor:pointer">📋 Transactions</button>
           </div>
-          <div id="wallet-txn-section">
-            <div id="txn-list"></div>
-          </div>
-          <div id="wallet-bets-section" style="display:none">
+          <div id="wallet-bets-section">
             <div id="bets-list"><div style="text-align:center;color:var(--text2);padding:40px">No bets placed yet</div></div>
+          </div>
+          <div id="wallet-txn-section" style="display:none">
+            <div id="txn-list"></div>
           </div>
         </div>
       </div>
@@ -698,7 +698,7 @@
           <span class="color-green fw-900 fs-18" id="profile-balance">KSh 0</span>
         </div>
         <div class="menu-list mt-16">
-          <div class="menu-item" onclick="alert('Coming soon!')"><span class="menu-icon">📊</span><span class="menu-label">Betting History</span><span class="menu-arrow">›</span></div>
+          <div class="menu-item" onclick="switchTab('wallet');setTimeout(()=>switchWalletTab('bets'),100)"><span class="menu-icon">🎟</span><span class="menu-label">My Bets</span><span class="menu-arrow">›</span></div>
           <div class="menu-item" onclick="switchTab('wallet')"><span class="menu-icon">💰</span><span class="menu-label">Deposit & Withdrawal</span><span class="menu-arrow">›</span></div>
           <div class="menu-item" onclick="openChangePassword()"><span class="menu-icon">🔐</span><span class="menu-label">Change Password</span><span class="menu-arrow">›</span></div>
           <div class="menu-item" onclick="openResponsibleGaming()"><span class="menu-icon">🛡️</span><span class="menu-label">Responsible Gaming</span><span class="menu-arrow">›</span></div>
@@ -2325,6 +2325,7 @@ function switchWalletTab(tab) {
   $('wallet-tab-bets').style.background = tab === 'bets' ? 'var(--green)' : 'var(--bg3)';
   $('wallet-tab-bets').style.color = tab === 'bets' ? '#000' : 'var(--text2)';
   if (tab === 'bets') renderBetHistory();
+  if (tab === 'txn') renderWallet();
 }
 
 async function renderBetHistory() {
@@ -2363,6 +2364,7 @@ async function renderBetHistory() {
 async function renderWallet() {
   // Always fetch fresh balance from Supabase when wallet opens
   if (state.user?.id) loadUserBalance(state.user.id);
+  renderBetHistory(); // show bets by default
   updateBalances();
   $('txn-list').innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px">Loading...</div>';
   if (state.user?.id) {
