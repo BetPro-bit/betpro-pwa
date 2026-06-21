@@ -2788,7 +2788,15 @@ function av2CashOut(slotId) {
 
   const mult = parseFloat(AV2.mult.toFixed(2));
   const win = parseFloat((slot.stake * mult).toFixed(2));
-  state.balance += win;
+
+  // Add win to balance
+  state.balance = parseFloat((state.balance + win).toFixed(2));
+
+  // Update all balance displays immediately
+  const bal = state.balance.toLocaleString('en-KE', {minimumFractionDigits:2});
+  const displays = ['home-balance','wallet-balance','profile-balance','av-balance'];
+  displays.forEach(id => { const el = $(id); if (el) el.textContent = 'KSh ' + bal; });
+  localStorage.setItem('bp_balance', state.balance);
 
   const status = $('av-status-' + slotId);
   if (status) {
@@ -2798,12 +2806,10 @@ function av2CashOut(slotId) {
   const slotEl = $('av-slot-' + slotId);
   if (slotEl) slotEl.className = 'av-slot won';
 
-  showToast('✅ Bet ' + slotId + ': Cashed out @' + mult + 'x — Won KSh ' + win + '!', 'success', 4000);
+  showToast('✅ Cashed out @' + mult + 'x — Won KSh ' + win + '!', 'success', 4000);
 
-  // Save balance in background
+  // Save to Supabase in background
   saveUserBalance().catch(e => console.warn('balance save:', e));
-  updateGameBalances();
-  updateBalances();
   av2UpdateSlotUI();
 }
 
