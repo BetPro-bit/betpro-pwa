@@ -2616,9 +2616,12 @@ function av2StartBetting() {
 }
 
 async function av2StartFlight() {
-  // Get round from backend — crash point hidden server-side
+  // Always generate crash point locally FIRST (hidden from UI)
+  // Backend is used only to record the round, not to control crash
+  AV2.crashAt = av2LocalCrash();
   AV2.roundId = null;
-  AV2._localCrash = null;
+
+  // Try to register round on backend (non-blocking)
   if (state.token) {
     try {
       const res = await fetch(API + '/api/games/aviator/start', {
@@ -2626,52 +2629,23 @@ async function av2StartFlight() {
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.token }
       });
       const data = await res.json();
-      if (data.success) {
-        AV2.roundId = data.roundId;
-      } else {
-        // Fallback: generate locally if backend fails
-        AV2._localCrash = av2LocalCrash();
-      }
-    } catch(e) {
-      console.warn('Backend unavailable, using local crash');
-      AV2._localCrash = av2LocalCrash();
-    }
-  } else {
-    // Not logged in — use local crash for demo
-    AV2._localCrash = av2LocalCrash();
-  }
-
-  // Register pending bets on backend
-  for (const slot of AV2.slots) {
-    if (slot.active && slot.pendingBackend) {
-      try {
-        await fetch(API + '/api/games/aviator/bet', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.token },
-          body: JSON.stringify({ roundId: AV2.roundId, slotId: slot.id, stake: slot.stake })
-        });
-        slot.pendingBackend = false;
-      } catch(e) { console.error('Bet register error:', e); }
-    }
+      if (data.success) AV2.roundId = data.roundId;
+    } catch(e) { console.warn('Backend round registration failed, running locally'); }
   }
 
   av2GenFakePlayers();
   av2SetPhase('flying', '✈️ Flying', 'flying');
-  AV2.mult = 1.0; AV2.points = [1.0];
-
-  // Generate crash point — always local unless backend roundId confirmed
-  AV2.crashAt = AV2.roundId ? null : av2LocalCrash();
-  console.log('New round crashAt:', AV2.crashAt, 'roundId:', AV2.roundId);
-
+  AV2.mult = 1.0;
+  AV2.points = [1.0];
   const cdEl = $('av2-countdown'); if (cdEl) cdEl.textContent = '';
   av2UpdateSlotUI();
   av2RenderPlayers();
 
-  console.log('Round started. CrashAt (local):', AV2.crashAt, '| RoundId:', AV2.roundId);
+  // Clear any previous interval
+  if (AV2.interval) clearInterval(AV2.interval);
 
   AV2.interval = setInterval(() => {
-    // Slow realistic increment — roughly +0.01 per tick at low values
-    AV2.mult = +(AV2.mult + 0.006 + AV2.mult * 0.004).toFixed(3);
+    AV2.mult = +(AV2.mult + 0.007 + AV2.mult * 0.005).toFixed(3);
     AV2.points.push(AV2.mult);
     av2SetMult(AV2.mult);
     av2DrawGraph();
@@ -2687,13 +2661,15 @@ async function av2StartFlight() {
       if (s.active && !s.cashedOut && s.auto > 0 && AV2.mult >= s.auto) av2CashOut(s.id);
     });
 
-    // Crash check
-    if (AV2.crashAt !== null && AV2.mult >= AV2.crashAt) {
+    // Crash check — AV2.crashAt is always set above
+    if (AV2.mult >= AV2.crashAt) {
       clearInterval(AV2.interval);
+      AV2.interval = null;
       av2Crash();
     }
   }, 100);
 }
+
 
 async function av2Crash() {
   av2SetPhase('crashed', '💥 CRASHED!', 'crashed');
