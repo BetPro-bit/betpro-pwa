@@ -2779,6 +2779,113 @@ async function av2Bet(slotId) {
   showToast('Bet ' + slotId + ' placed — KSh ' + stake + ' 🚀', 'success', 2000);
 }
 
+function av2CashOut(slotId) {
+  const slot = AV2.slots.find(s => s.id === slotId);
+  if (!slot || !slot.active || slot.cashedOut || AV2.phase !== 'flying') return;
+
+  slot.cashedOut = true;
+  slot.active = false;
+
+  const mult = parseFloat(AV2.mult.toFixed(2));
+  const win = parseFloat((slot.stake * mult).toFixed(2));
+  state.balance += win;
+
+  const status = $('av-status-' + slotId);
+  if (status) {
+    status.textContent = '✅ Cashed @' + mult + 'x — Won KSh ' + win;
+    status.style.color = '#ffd700';
+  }
+  const slotEl = $('av-slot-' + slotId);
+  if (slotEl) slotEl.className = 'av-slot won';
+
+  showToast('✅ Bet ' + slotId + ': Cashed out @' + mult + 'x — Won KSh ' + win + '!', 'success', 4000);
+
+  // Save balance in background
+  saveUserBalance().catch(e => console.warn('balance save:', e));
+  updateGameBalances();
+  updateBalances();
+  av2UpdateSlotUI();
+}
+
+
+function av2Crash() {
+  clearInterval(AV2.interval);
+  AV2.interval = null;
+  AV2.phase = 'crashed';
+
+  const crashVal = parseFloat((AV2.crashAt || AV2.mult).toFixed(2));
+
+  av2SetPhase('crashed', '💥 CRASHED at ' + crashVal + 'x', 'crashed');
+  av2SetMult(crashVal, 'crashed');
+
+  // Settle lost slots
+  let totalLost = 0;
+  AV2.slots.forEach(s => {
+    if (s.active && !s.cashedOut) {
+      totalLost += s.stake;
+      s.active = false;
+      const status = $('av-status-' + s.id);
+      if (status) { status.textContent = '💥 Lost KSh ' + s.stake; status.style.color = '#ff2200'; }
+      const slotEl = $('av-slot-' + s.id);
+      if (slotEl) slotEl.className = 'av-slot lost';
+    }
+  });
+
+  if (totalLost > 0) showToast('💥 Crashed at ' + crashVal + 'x! Lost KSh ' + totalLost, 'error', 3000);
+
+  // Add to history
+  AV2.history.unshift(crashVal);
+  AV2.history = AV2.history.slice(0, 20);
+  av2RenderHistory();
+  av2UpdateSlotUI();
+
+  // Save balance in background — do NOT await
+  saveUserBalance().catch(e => console.warn('balance save:', e));
+  try { updateGameBalances(); updateBalances(); } catch(e) {}
+
+  AV2.crashAt = null;
+  AV2.roundId = null;
+
+  // 7 second countdown then restart
+  let cd = 7;
+  const phaseEl = $('av2-phase');
+  const multEl = $('av2-mult');
+
+  // Show immediately
+  if (phaseEl) { phaseEl.textContent = '⏳ Next round in ' + cd + 's...'; phaseEl.className = 'av2-phase betting'; }
+  if (multEl) { multEl.textContent = 'Next round in ' + cd + 's'; multEl.className = 'av2-mult waiting'; }
+
+  const restartTimer = setInterval(() => {
+    cd--;
+    if (phaseEl) { phaseEl.textContent = cd > 0 ? '⏳ Next round in ' + cd + 's...' : '🚀 Starting...'; }
+    if (multEl) { multEl.textContent = cd > 0 ? 'Next round in ' + cd + 's' : 'Starting...'; }
+    if (cd <= 0) {
+      clearInterval(restartTimer);
+      av2StartBetting();
+    }
+  }, 1000);
+}
+
+
+async function av2Bet(slotId) {
+  if (AV2.phase !== 'betting') { showToast('Wait for next round to place bet', 'error'); return; }
+  const slot = AV2.slots.find(s => s.id === slotId);
+  if (!slot || slot.active) return;
+  const stake = parseFloat($('av-stake-'+slotId)?.value);
+  const auto = parseFloat($('av-auto-'+slotId)?.value) || 0;
+  if (!stake || stake < 10) { showToast('Minimum bet is KSh 10', 'error'); return; }
+  if (stake > state.balance) { showToast('Insufficient balance', 'error'); return; }
+
+  slot.stake = stake; slot.auto = auto; slot.active = true; slot.cashedOut = false;
+  slot.pendingBackend = true;
+  state.balance -= stake;
+
+  const status = $('av-status-'+slotId);
+  if (status) { status.textContent = '✅ KSh ' + stake + ' placed' + (auto ? ' — Auto @' + auto + 'x' : ''); status.style.color = '#ff7800'; }
+  av2UpdateSlotUI(); updateGameBalances(); updateBalances();
+  showToast('Bet ' + slotId + ' placed — KSh ' + stake + ' 🚀', 'success', 2000);
+}
+
 async function av2CashOut(slotId) {
   const slot = AV2.slots.find(s => s.id === slotId);
   if (!slot || !slot.active || slot.cashedOut || AV2.phase !== 'flying') return;
