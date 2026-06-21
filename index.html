@@ -183,6 +183,7 @@
   
   /* Modal */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 300; display: flex; align-items: flex-end; justify-content: center; }
+  #terms-modal { z-index: 500; }
   .modal-overlay.hidden { display: none !important; pointer-events: none !important; visibility: hidden !important; }
   .chat-msg { display: flex; flex-direction: column; }
   .chat-msg.user { align-items: flex-end; }
@@ -2094,11 +2095,15 @@ function toggleTerms() {
   $('terms-check').innerHTML = state.terms ? '✓' : '';
 }
 function showTermsModal() {
-  $('terms-modal').classList.remove('hidden');
+  const m = document.getElementById('terms-modal');
+  if (m) { m.classList.remove('hidden'); m.style.display='flex'; }
 }
 function hideTermsModal() {
-  $('terms-modal').classList.add('hidden');
+  const m = document.getElementById('terms-modal');
+  if (m) { m.classList.add('hidden'); m.style.display=''; }
 }
+window.showTermsModal = showTermsModal;
+window.hideTermsModal = hideTermsModal;
 
 // ── Balance ────────────────────────────────────────────────────────────────────
 function updateBalances() {
