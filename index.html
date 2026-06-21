@@ -522,9 +522,9 @@
           <label class="form-label">Confirm Password</label>
           <input class="form-input" id="reg-confirm" type="password" placeholder="Repeat password"/>
         </div>
-        <div class="check-row" onclick="toggleTerms()">
-          <div class="checkbox" id="terms-check"></div>
-          <div class="terms-text">I agree to the <span class="link" onclick="showTermsModal(event)">Terms & Conditions</span> and confirm I am 18+ years old</div>
+        <div class="check-row">
+          <div class="checkbox" id="terms-check" onclick="toggleTerms()"></div>
+          <div class="terms-text" onclick="toggleTerms()">I agree to the <span class="link" onclick="event.stopPropagation();showTermsModal()">Terms & Conditions</span> and confirm I am 18+ years old</div>
         </div>
         <button class="btn btn-green" id="reg-btn" onclick="handleRegister()">Create Account & Verify →</button>
         <div class="text-center text-sm">Already have an account? <span class="link" onclick="showScreen('login')">Sign In</span></div>
@@ -2093,8 +2093,7 @@ function toggleTerms() {
   $('terms-check').className = 'checkbox' + (state.terms ? ' checked' : '');
   $('terms-check').innerHTML = state.terms ? '✓' : '';
 }
-function showTermsModal(e) {
-  if (e) e.stopPropagation();
+function showTermsModal() {
   $('terms-modal').classList.remove('hidden');
 }
 function hideTermsModal() {
