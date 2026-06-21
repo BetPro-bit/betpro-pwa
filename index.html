@@ -3245,14 +3245,38 @@ function selectCountry(code) {
 // Init
 initCountryChips();
 (async () => {
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    state.token = session.access_token;
-    state.user = { id: session.user.id, phone: session.user.user_metadata?.phone || '' };
-    await loadUserBalance(session.user.id);
-    showScreen('main'); updateBalances();
-    fetchRealMatches();
-  } else {
+  try {
+    // Try Supabase session first
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      state.token = session.access_token;
+      state.user = { id: session.user.id, phone: session.user.user_metadata?.phone || '' };
+      // Save to localStorage for future restores
+      localStorage.setItem('bp_token', session.access_token);
+      localStorage.setItem('bp_user_id', session.user.id);
+      localStorage.setItem('bp_phone', session.user.user_metadata?.phone || '');
+      await loadUserBalance(session.user.id);
+      showScreen('main'); updateBalances();
+      fetchRealMatches();
+      return;
+    }
+
+    // Fallback: try localStorage session
+    const token = localStorage.getItem('bp_token');
+    const userId = localStorage.getItem('bp_user_id');
+    const phone = localStorage.getItem('bp_phone');
+    if (token && userId) {
+      state.token = token;
+      state.user = { id: userId, phone };
+      await loadUserBalance(userId);
+      showScreen('main'); updateBalances();
+      fetchRealMatches();
+      return;
+    }
+
+    showScreen('login');
+  } catch(e) {
+    console.error('Init error:', e.message);
     showScreen('login');
   }
 })();
