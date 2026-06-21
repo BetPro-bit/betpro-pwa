@@ -2593,6 +2593,9 @@ function av2UpdateSlotUI() {
 }
 
 function av2StartBetting() {
+  // Clear any stale intervals
+  if (AV2.interval) { clearInterval(AV2.interval); AV2.interval = null; }
+  if (AV2.betInterval) { clearInterval(AV2.betInterval); AV2.betInterval = null; }
   // Reinit canvas if not ready
   if (!AV2.canvas || !AV2.ctx) av2InitCanvas();
   AV2.phase = 'betting';
@@ -2719,11 +2722,7 @@ async function av2Crash() {
   AV2.roundId = null;
   AV2.interval = null;
 
-  setTimeout(() => {
-    if ($('screen-aviator') && $('screen-aviator').classList.contains('active')) {
-      av2StartBetting();
-    }
-  }, 4000);
+  setTimeout(av2StartBetting, 4000);
 }
 
 async function av2Bet(slotId) {
