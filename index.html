@@ -2892,42 +2892,7 @@ async function av2Bet(slotId) {
   showToast('Bet ' + slotId + ' placed — KSh ' + stake + ' 🚀', 'success', 2000);
 }
 
-async function av2CashOut(slotId) {
-  const slot = AV2.slots.find(s => s.id === slotId);
-  if (!slot || !slot.active || slot.cashedOut || AV2.phase !== 'flying') return;
-  slot.cashedOut = true; // optimistically mark to prevent double click
 
-  try {
-    const res = await fetch(API + '/api/games/aviator/cashout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.token },
-      body: JSON.stringify({ roundId: AV2.roundId, slotId, multiplier: parseFloat(AV2.mult.toFixed(2)) })
-    });
-    const data = await res.json();
-
-    if (data.crashed) {
-      // Server says we crashed — bad timing
-      slot.cashedOut = false; slot.active = false;
-      const status = $('av-status-'+slotId);
-      if (status) { status.textContent = `💥 Too late! Crashed at ${data.crashAt}x`; status.style.color = '#ff2200'; }
-      showToast(`💥 Bet ${slotId}: Too late — crashed at ${data.crashAt}x`, 'error');
-      clearInterval(AV2.interval);
-      av2Crash();
-    } else {
-      // Valid cashout confirmed by server
-      slot.active = false;
-      state.balance = data.balance;
-      const status = $('av-status-'+slotId);
-      if (status) { status.textContent = `✅ Cashed @${data.cashoutAt}x — Won KSh ${data.winAmount}`; status.style.color = '#ffd700'; }
-      const slot_el = $('av-slot-'+slotId); if (slot_el) slot_el.className = 'av-slot won';
-      showToast(`✅ Bet ${slotId}: Cashed out @${data.cashoutAt}x — Won KSh ${data.winAmount}!`, 'success', 4000);
-      av2UpdateSlotUI(); updateGameBalances(); updateBalances();
-    }
-  } catch(e) {
-    slot.cashedOut = false; // revert on error
-    showToast('Cashout failed — try again', 'error');
-  }
-}
 
 function renderAvHistory() { av2RenderHistory(); }
 
