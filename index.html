@@ -698,7 +698,7 @@
           <div class="menu-item" onclick="openSupportChat()"><span class="menu-icon">💬</span><span class="menu-label">Support Chat</span><span class="menu-arrow">›</span></div>
           <div class="menu-item logout" onclick="handleLogout()"><span class="menu-icon">🚪</span><span class="menu-label">Sign Out</span><span class="menu-arrow">›</span></div>
         </div>
-        <div style="text-align:center;color:var(--text3);font-size:12px;padding:16px">BetPro v1.0.0 • support@betpro.com<br/>Please bet responsibly. 18+ only.</div>
+        <div style="text-align:center;color:var(--text3);font-size:12px;padding:16px">BetPro v1.0.0 • betprowincompany@gmail.com<br/>Please bet responsibly. 18+ only.</div>
       </div>
     </div>
 
@@ -3121,9 +3121,9 @@ You help users with:
 - Withdrawals: minimum KSh 100, sent to M-Pesa, takes a few minutes
 - Account: registration with phone number, login issues, password reset
 - Games: Crash, Dice, Mines, Plinko available in the casino section
-- General: responsible gambling, 18+ only, support@betpro.com for escalations
+- General: responsible gambling, 18+ only, betprowincompany@gmail.com for escalations
 
-Keep responses short, friendly and helpful. Use simple English. If you cannot help, direct them to support@betpro.com.
+Keep responses short, friendly and helpful. Use simple English. If you cannot help, direct them to betprowincompany@gmail.com.
 Do not discuss topics unrelated to BetPro.`;
 
 function openSupportChat() {
@@ -3202,7 +3202,7 @@ async function sendChatMessage() {
       body: JSON.stringify({ messages: aiChatHistory })
     });
     const data = await response.json();
-    const reply = data.reply || "Sorry, I couldn't get a response. Please try again or email support@betpro.com.";
+    const reply = data.reply || "Sorry, I couldn't get a response. Please try again or email betprowincompany@gmail.com.";
 
     removeTypingIndicator();
     appendChatMsg('assistant', reply);
@@ -3212,7 +3212,7 @@ async function sendChatMessage() {
     if (aiChatHistory.length > 20) aiChatHistory = aiChatHistory.slice(-20);
   } catch(e) {
     removeTypingIndicator();
-    appendChatMsg('assistant', "I'm having trouble connecting right now. Please email support@betpro.com or try again.");
+    appendChatMsg('assistant', "I'm having trouble connecting right now. Please email betprowincompany@gmail.com or try again.");
   }
 
   if (sendBtn) sendBtn.disabled = false;
