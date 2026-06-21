@@ -2675,55 +2675,62 @@ async function av2StartFlight() {
 
 
 async function av2Crash() {
-  av2SetPhase('crashed', '💥 CRASHED!', 'crashed');
-  if (AV2.crashAt) av2SetMult(AV2.crashAt, 'crashed');
-  else av2SetMult(AV2.mult, 'crashed');
-  const cdEl = $('av2-countdown'); if (cdEl) cdEl.textContent = '';
-  av2DrawGraph();
+  clearInterval(AV2.interval);
+  AV2.interval = null;
+  AV2.phase = 'crashed';
 
+  const crashVal = parseFloat((AV2.crashAt || AV2.mult).toFixed(2));
+
+  // Update display
+  av2SetPhase('crashed', '💥 CRASHED at ' + crashVal + 'x', 'crashed');
+  av2SetMult(crashVal, 'crashed');
+
+  // Settle lost slots
+  let totalLost = 0;
   AV2.slots.forEach(s => {
-    const status = $('av-status-'+s.id);
     if (s.active && !s.cashedOut) {
-      if (status) { status.textContent = `Lost KSh ${s.stake} — crashed at ${(AV2.crashAt||AV2.mult).toFixed(2)}x`; status.style.color = '#ff2200'; }
-      const slot = $('av-slot-'+s.id); if (slot) slot.className = 'av-slot lost';
+      totalLost += s.stake;
       s.active = false;
+      const status = $('av-status-' + s.id);
+      if (status) { status.textContent = '💥 Lost KSh ' + s.stake; status.style.color = '#ff2200'; }
+      const slotEl = $('av-slot-' + s.id);
+      if (slotEl) slotEl.className = 'av-slot lost';
     }
   });
 
-  if (totalLost > 0) showToast(`💥 Crashed at ${(AV2.crashAt||AV2.mult).toFixed(2)}x! Lost KSh ${totalLost}`, 'error', 3000);
-
-  // Tell backend — it reveals crashAt and settles remaining slots
-  try {
-    const res = await fetch(API + '/api/games/aviator/crash', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.token },
-      body: JSON.stringify({ roundId: AV2.roundId })
-    });
-    const data = await res.json();
-    if (data.crashAt) {
-      AV2.crashAt = data.crashAt;
-      av2SetMult(data.crashAt, 'crashed');
-    }
-  } catch(e) { console.error('Crash settle error:', e.message); }
+  if (totalLost > 0) showToast('💥 Crashed at ' + crashVal + 'x! Lost KSh ' + totalLost, 'error', 3000);
 
   // Add to history
-  const crashVal = AV2.crashAt || AV2.mult;
-  AV2.history.unshift(parseFloat(crashVal.toFixed ? crashVal.toFixed(2) : crashVal));
+  AV2.history.unshift(crashVal);
   AV2.history = AV2.history.slice(0, 20);
   av2RenderHistory();
   av2UpdateSlotUI();
 
-  // Save balance safely — never block restart
-  try { await saveUserBalance(); } catch(e) { console.warn('Balance save failed:', e.message); }
+  // Save balance
+  try { await saveUserBalance(); } catch(e) {}
   try { updateGameBalances(); updateBalances(); } catch(e) {}
 
-  // Reset and restart next round
+  // Countdown 7 seconds then start betting
   AV2.crashAt = null;
   AV2.roundId = null;
-  AV2.interval = null;
+  let cd = 7;
+  const phaseEl = $('av2-phase');
+  const multEl = $('av2-mult');
+  const cdEl = $('av2-countdown');
 
-  setTimeout(av2StartBetting, 4000);
+  if (cdEl) cdEl.textContent = '';
+
+  const restartTimer = setInterval(() => {
+    if (phaseEl) { phaseEl.textContent = '⏳ Next round in ' + cd + 's...'; phaseEl.className = 'av2-phase betting'; }
+    if (multEl) { multEl.textContent = 'Next round in ' + cd + 's'; multEl.className = 'av2-mult waiting'; }
+    cd--;
+    if (cd < 0) {
+      clearInterval(restartTimer);
+      av2StartBetting();
+    }
+  }, 1000);
 }
+
 
 async function av2Bet(slotId) {
   if (AV2.phase !== 'betting') { showToast('Wait for next betting phase', 'error'); return; }
