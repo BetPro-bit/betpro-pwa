@@ -2674,14 +2674,13 @@ async function av2StartFlight() {
 }
 
 
-async function av2Crash() {
+function av2Crash() {
   clearInterval(AV2.interval);
   AV2.interval = null;
   AV2.phase = 'crashed';
 
   const crashVal = parseFloat((AV2.crashAt || AV2.mult).toFixed(2));
 
-  // Update display
   av2SetPhase('crashed', '💥 CRASHED at ' + crashVal + 'x', 'crashed');
   av2SetMult(crashVal, 'crashed');
 
@@ -2706,25 +2705,27 @@ async function av2Crash() {
   av2RenderHistory();
   av2UpdateSlotUI();
 
-  // Save balance
-  try { await saveUserBalance(); } catch(e) {}
+  // Save balance in background — do NOT await
+  saveUserBalance().catch(e => console.warn('balance save:', e));
   try { updateGameBalances(); updateBalances(); } catch(e) {}
 
-  // Countdown 7 seconds then start betting
   AV2.crashAt = null;
   AV2.roundId = null;
+
+  // 7 second countdown then restart
   let cd = 7;
   const phaseEl = $('av2-phase');
   const multEl = $('av2-mult');
-  const cdEl = $('av2-countdown');
 
-  if (cdEl) cdEl.textContent = '';
+  // Show immediately
+  if (phaseEl) { phaseEl.textContent = '⏳ Next round in ' + cd + 's...'; phaseEl.className = 'av2-phase betting'; }
+  if (multEl) { multEl.textContent = 'Next round in ' + cd + 's'; multEl.className = 'av2-mult waiting'; }
 
   const restartTimer = setInterval(() => {
-    if (phaseEl) { phaseEl.textContent = '⏳ Next round in ' + cd + 's...'; phaseEl.className = 'av2-phase betting'; }
-    if (multEl) { multEl.textContent = 'Next round in ' + cd + 's'; multEl.className = 'av2-mult waiting'; }
     cd--;
-    if (cd < 0) {
+    if (phaseEl) { phaseEl.textContent = cd > 0 ? '⏳ Next round in ' + cd + 's...' : '🚀 Starting...'; }
+    if (multEl) { multEl.textContent = cd > 0 ? 'Next round in ' + cd + 's' : 'Starting...'; }
+    if (cd <= 0) {
       clearInterval(restartTimer);
       av2StartBetting();
     }
