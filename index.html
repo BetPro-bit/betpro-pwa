@@ -2289,10 +2289,11 @@ async function placeBet() {
     placed_at: new Date().toISOString()
   };
 
-  // Save to local history
+  // Save to local history + localStorage
   if (!state.betHistory) state.betHistory = [];
   state.betHistory.unshift(ticket);
   state.betHistory = state.betHistory.slice(0, 50);
+  localStorage.setItem('bp_bet_history', JSON.stringify(state.betHistory));
 
   // Save to Supabase transactions table
   if (state.user?.id) {
@@ -3430,6 +3431,12 @@ function selectCountry(code) {
 // Init
 initCountryChips();
 (async () => {
+  // Restore bet history from localStorage
+  try {
+    const saved = localStorage.getItem('bp_bet_history');
+    if (saved) state.betHistory = JSON.parse(saved);
+  } catch(e) {}
+
   try {
     // Try Supabase session first
     const { data: { session } } = await sb.auth.getSession();
