@@ -452,7 +452,7 @@
           <label class="form-label">Phone Number</label>
           <div class="phone-row">
             <div class="dial-code">🇰🇪 +254</div>
-            <input class="form-input" id="login-phone" type="tel" placeholder="7XXXXXXXX or 11XXXXXXXX" maxlength="10"/>
+            <input class="form-input" id="login-phone" type="tel" placeholder="7XXXXXXXX or 1XXXXXXXX" maxlength="10"/>
           </div>
         </div>
         
@@ -504,7 +504,7 @@
           <label class="form-label">Phone Number</label>
           <div class="phone-row">
             <div class="dial-code" id="reg-dial">🇰🇪 +254</div>
-            <input class="form-input" id="reg-phone" type="tel" placeholder="7XXXXXXXX or 11XXXXXXXX" maxlength="10"/>
+            <input class="form-input" id="reg-phone" type="tel" placeholder="7XXXXXXXX or 1XXXXXXXX" maxlength="10"/>
           </div>
         </div>
         <div class="form-group">
@@ -1148,7 +1148,7 @@
           <label class="form-label">M-Pesa Phone Number</label>
           <div class="phone-row">
             <div class="dial-code">🇰🇪 +254</div>
-            <input class="form-input" id="dep-phone" type="tel" placeholder="7XXXXXXXX or 11XXXXXXXX" maxlength="10"/>
+            <input class="form-input" id="dep-phone" type="tel" placeholder="7XXXXXXXX or 1XXXXXXXX" maxlength="10"/>
           </div>
         </div>
         <div class="form-group mt-8">
@@ -1213,7 +1213,7 @@
         <label class="form-label">M-Pesa Number</label>
         <div class="phone-row">
           <div class="dial-code">🇰🇪 +254</div>
-          <input class="form-input" id="with-phone" type="tel" placeholder="7XXXXXXXX or 11XXXXXXXX" maxlength="10"/>
+          <input class="form-input" id="with-phone" type="tel" placeholder="7XXXXXXXX or 1XXXXXXXX" maxlength="10"/>
         </div>
       </div>
       <button class="btn btn-green mt-16" id="with-btn" onclick="handleWithdraw()">📤 Withdraw Now</button>
@@ -2043,9 +2043,9 @@ async function handleRegister() {
   const email = $('reg-email').value.trim();
   const password = $('reg-password').value;
   const confirm = $('reg-confirm').value;
-  // Validate Kenyan phone: 7XXXXXXXX (9 digits) or 11XXXXXXXX (10 digits for 011x)
-  const kenyanPhone = /^(7[0-9]{8}|1[0-9]{9})$/;
-  if (!phone || !kenyanPhone.test(phone)) { showToast('Enter valid number e.g. 7XXXXXXXX or 11XXXXXXXX', 'error'); return; }
+  // Validate Kenyan phone: 7XXXXXXXX (07x) or 1XXXXXXXX (011x) — both 9 digits without leading 0
+  const kenyanPhone = /^[71][0-9]{8}$/;
+  if (!phone || !kenyanPhone.test(phone)) { showToast('Enter valid number e.g. 7XXXXXXXX or 1XXXXXXXX', 'error'); return; }
   if (!email || !email.includes('@')) { showToast('Enter valid email address', 'error'); return; }
   if (password.length < 8) { showToast('Password must be 8+ characters', 'error'); return; }
   if (password !== confirm) { showToast('Passwords do not match', 'error'); return; }
