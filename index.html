@@ -2329,6 +2329,96 @@ function switchWalletTab(tab) {
   if (tab === 'txn') renderWallet();
 }
 
+// Settle pending bets against match results
+async function settlePendingBets() {
+  if (!state.betHistory || state.betHistory.length === 0) return;
+  const pending = state.betHistory.filter(t => t.status === 'pending');
+  if (pending.length === 0) return;
+
+  // Fetch finished matches from backend
+  let finishedMatches = [];
+  try {
+    const res = await fetch(API + '/api/matches?status=FINISHED');
+    const data = await res.json();
+    finishedMatches = data.matches || [];
+  } catch(e) { return; }
+
+  if (finishedMatches.length === 0) return;
+
+  // Build result map: matchId -> outcome
+  const resultMap = {};
+  finishedMatches.forEach(m => {
+    const home = m.score?.fullTime?.home;
+    const away = m.score?.fullTime?.away;
+    if (home === null || away === null || home === undefined) return;
+    let outcome;
+    if (home > away) outcome = '1 Home';
+    else if (away > home) outcome = '2 Away';
+    else outcome = 'X Draw';
+
+    // Goals markets
+    const totalGoals = home + away;
+    const btts = home > 0 && away > 0;
+    resultMap[m.id] = {
+      '1 Home': home > away,
+      'X Draw': home === away,
+      '2 Away': away > home,
+      'GG': btts,
+      'NG': !btts,
+      'Over 2.5': totalGoals > 2.5,
+      'Under 2.5': totalGoals < 2.5,
+      'Over 9.5': false, // corners not available on free tier
+      'Under 9.5': false,
+    };
+  });
+
+  let changed = false;
+  state.betHistory = state.betHistory.map(ticket => {
+    if (ticket.status !== 'pending') return ticket;
+
+    // Check if all selections have results
+    const allSettled = ticket.selections.every(s => resultMap[s.matchId] !== undefined);
+    if (!allSettled) return ticket;
+
+    // Check if all selections won
+    const allWon = ticket.selections.every(s => {
+      const matchResult = resultMap[s.matchId];
+      if (!matchResult) return false;
+      // Match selection label to result
+      const sel = s.selection;
+      if (matchResult[sel] !== undefined) return matchResult[sel];
+      // Fuzzy match for labels like "1 Home", "X Draw", "2 Away"
+      if (sel.includes('Home')) return matchResult['1 Home'];
+      if (sel.includes('Draw')) return matchResult['X Draw'];
+      if (sel.includes('Away')) return matchResult['2 Away'];
+      if (sel.includes('GG') || sel === 'GG') return matchResult['GG'];
+      if (sel.includes('NG') || sel === 'NG') return matchResult['NG'];
+      if (sel.includes('Over 2.5')) return matchResult['Over 2.5'];
+      if (sel.includes('Under 2.5')) return matchResult['Under 2.5'];
+      return false;
+    });
+
+    changed = true;
+    const newStatus = allWon ? 'won' : 'lost';
+
+    // Credit winnings if won
+    if (allWon) {
+      const winAmount = parseFloat((ticket.stake * ticket.total_odds).toFixed(2));
+      state.balance = parseFloat((state.balance + winAmount).toFixed(2));
+      showToast('🎉 Bet won! KSh ' + winAmount.toLocaleString() + ' credited!', 'success', 5000);
+      saveUserBalance().catch(e => {});
+      updateBalances();
+    }
+
+    return { ...ticket, status: newStatus };
+  });
+
+  if (changed) {
+    localStorage.setItem('bp_bet_history', JSON.stringify(state.betHistory));
+    renderBetHistory();
+  }
+}
+
 async function renderBetHistory() {
   const el = $('bets-list');
   if (!el) return;
@@ -2366,6 +2456,7 @@ async function renderWallet() {
   // Always fetch fresh balance from Supabase when wallet opens
   if (state.user?.id) loadUserBalance(state.user.id);
   renderBetHistory(); // show bets by default
+  settlePendingBets(); // check for settled matches
   updateBalances();
   $('txn-list').innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px">Loading...</div>';
   if (state.user?.id) {
