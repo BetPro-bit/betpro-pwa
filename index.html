@@ -271,6 +271,24 @@
   .game-title { font-size: 20px; font-weight: 800; }
   .game-content { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
   
+  /* Horse Racing */
+  .hr-track { background: linear-gradient(180deg,#1a3a1a 0%,#0d2b0d 100%); border-radius:12px; padding:10px; margin-bottom:12px; position:relative; overflow:hidden; border:1px solid rgba(0,255,0,0.2); }
+  .hr-lane { display:flex; align-items:center; height:38px; margin-bottom:4px; position:relative; border-bottom:1px solid rgba(255,255,255,0.05); }
+  .hr-lane:last-child { border-bottom:none; margin-bottom:0; }
+  .hr-horse { position:absolute; font-size:22px; transition:left 0.1s linear; left:0; filter:drop-shadow(0 0 4px rgba(255,255,255,0.3)); }
+  .hr-finish { position:absolute; right:0; top:0; bottom:0; width:3px; background:repeating-linear-gradient(180deg,#fff 0px,#fff 6px,#000 6px,#000 12px); }
+  .hr-num { width:22px; font-size:11px; font-weight:800; color:rgba(255,255,255,0.5); flex-shrink:0; }
+  .hr-name { width:80px; font-size:10px; color:rgba(255,255,255,0.7); flex-shrink:0; white-space:nowrap; overflow:hidden; }
+  .hr-odds-badge { font-size:10px; color:var(--green); font-weight:800; width:32px; flex-shrink:0; }
+  .hr-card { background:var(--bg2); border:2px solid var(--border); border-radius:10px; padding:10px; cursor:pointer; transition:border-color 0.2s; }
+  .hr-card.selected { border-color:var(--green); background:var(--green-glow); }
+  .hr-card.winner { border-color:#ffd700; background:rgba(255,215,0,0.1); animation:hrWin 0.5s ease 3; }
+  @keyframes hrWin { 0%,100%{transform:scale(1)} 50%{transform:scale(1.03)} }
+  .hr-status { text-align:center; padding:10px; font-size:15px; font-weight:800; border-radius:10px; margin-bottom:10px; }
+  .hr-status.open { background:rgba(0,255,135,0.1); color:var(--green); border:1px solid var(--green); }
+  .hr-status.racing { background:rgba(255,120,0,0.1); color:#ff7800; border:1px solid #ff7800; }
+  .hr-status.finished { background:rgba(255,215,0,0.1); color:#ffd700; border:1px solid #ffd700; }
+
   /* BetPro Aviator */
   .av2-wrap { background: linear-gradient(180deg,#0a0000 0%,#1a0500 100%); border-radius: 16px; overflow: hidden; position: relative; margin-bottom: 12px; border: 1px solid rgba(255,120,0,0.3); }
   .av2-canvas-wrap { position: relative; width: 100%; height: 220px; }
@@ -597,6 +615,7 @@
           <div class="game-card" onclick="openGame('wheel')"><div class="game-icon">🎡</div><div class="game-name">Wheel</div><div class="game-min">Min KSh 10</div></div>
           <div class="game-card" onclick="openGame('dice')"><div class="game-icon">🎲</div><div class="game-name">Dice</div><div class="game-min">Min KSh 10</div></div>
           <div class="game-card" onclick="openGame('plinko')"><div class="game-icon">🎯</div><div class="game-name">Plinko</div><div class="game-min">Min KSh 10</div></div>
+          <div class="game-card hot" onclick="openGame('horses')"><div class="hot-badge">NEW</div><div class="game-icon">🐎</div><div class="game-name">Horses</div><div class="game-min">Min KSh 10</div></div>
         </div>
       </div>
       <div class="stats-row">
@@ -643,6 +662,7 @@
           <div class="casino-game-card" onclick="openGame('wheel')"><div class="casino-game-icon">🎡</div><div class="casino-game-name">Lucky Wheel</div><div class="casino-game-desc">Spin to win</div><div class="min-badge">Min KSh 10</div></div>
           <div class="casino-game-card" onclick="openGame('dice')"><div class="casino-game-icon">🎲</div><div class="casino-game-name">Dice</div><div class="casino-game-desc">Roll your luck</div><div class="min-badge">Min KSh 10</div></div>
           <div class="casino-game-card full-width" onclick="openGame('plinko')"><div class="casino-game-icon">🎯</div><div class="casino-game-name">Plinko</div><div class="casino-game-desc">Drop the ball, win big</div><div class="min-badge">Min KSh 10</div></div>
+          <div class="casino-game-card full-width" onclick="openGame('horses')" style="border-color:var(--green)"><div class="hot-badge">NEW</div><div class="casino-game-icon">🐎</div><div class="casino-game-name">Horse Racing</div><div class="casino-game-desc">Pick your horse, race to win!</div><div class="min-badge">Min KSh 10</div></div>
         </div>
         <div style="height:20px"></div>
       </div>
@@ -860,6 +880,57 @@
 
   <!-- GAME SCREENS -->
   <!-- AVIATOR -->
+  <!-- HORSE RACING GAME -->
+  <div class="screen" id="screen-horses">
+    <div class="game-header" style="background:#0a1a0a;border-bottom:1px solid rgba(0,255,0,0.2)">
+      <button class="game-back" onclick="closeGame()">← Back</button>
+      <div class="game-title" style="color:#00ff87">🐎 Horse Racing</div>
+      <div class="balance-chip">💰 <span id="hr-balance">0</span></div>
+    </div>
+    <div class="game-content" style="padding:10px;background:#0a1a0a;min-height:100vh">
+
+      <!-- Status & Timer -->
+      <div class="hr-status open" id="hr-status">🟢 Place Your Bets — Race starts in <span id="hr-countdown">30</span>s</div>
+
+      <!-- Race Track -->
+      <div class="hr-track" id="hr-track"></div>
+
+      <!-- Winner Banner -->
+      <div id="hr-winner-banner" style="display:none;text-align:center;padding:16px;background:rgba(255,215,0,0.15);border:2px solid #ffd700;border-radius:12px;margin-bottom:12px">
+        <div style="font-size:28px">🏆</div>
+        <div style="font-size:18px;font-weight:900;color:#ffd700" id="hr-winner-text">Horse wins!</div>
+        <div style="font-size:13px;color:var(--text2);margin-top:4px" id="hr-result-text"></div>
+      </div>
+
+      <!-- Horse Selection Grid -->
+      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:8px">🎯 Pick Your Horse</div>
+      <div id="hr-horses-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px"></div>
+
+      <!-- Bet Controls -->
+      <div id="hr-bet-controls" style="background:var(--bg2);border-radius:12px;padding:12px;border:1px solid var(--border)">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Selected: <strong id="hr-selected-name" style="color:var(--green)">None</strong></div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input class="form-input" id="hr-stake" type="number" placeholder="Stake (min KSh 10)" min="10" style="flex:1"/>
+          <div style="display:flex;flex-direction:column;justify-content:center;font-size:12px;color:var(--text2)">
+            Odds: <strong id="hr-selected-odds" style="color:var(--green)">-</strong>
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;margin-bottom:10px">
+          <button class="quick-btn" style="flex:1;font-size:11px" onclick="$('hr-stake').value=10">10</button>
+          <button class="quick-btn" style="flex:1;font-size:11px" onclick="$('hr-stake').value=50">50</button>
+          <button class="quick-btn" style="flex:1;font-size:11px" onclick="$('hr-stake').value=100">100</button>
+          <button class="quick-btn" style="flex:1;font-size:11px" onclick="$('hr-stake').value=500">500</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:10px">
+          <span style="color:var(--text2)">Potential Win</span>
+          <span style="font-weight:900;color:var(--green)" id="hr-pot-win">KSh 0.00</span>
+        </div>
+        <button class="btn btn-green" id="hr-bet-btn" onclick="hrPlaceBet()">🐎 Place Bet</button>
+      </div>
+
+    </div>
+  </div>
+
   <div class="screen" id="screen-aviator">
     <div class="game-header" style="background:#0a0000;border-bottom:1px solid rgba(255,120,0,0.3)">
       <button class="game-back" onclick="closeGame()">← Back</button>
@@ -1540,7 +1611,7 @@ function showScreen(name) {
   $('screen-' + name).classList.add('active');
 }
 function switchTab(tab) {
-  ['home','sports','casino','wallet','profile','virtual'].forEach(t => {
+  ['home','sports','casino','wallet','profile','virtual','horses'].forEach(t => {
     $('tab-' + t).classList.toggle('hidden', t !== tab);
     const tb = $('tabbar-' + t); if (tb) tb.classList.toggle('active', t === tab);
   });
@@ -1924,6 +1995,9 @@ function openGame(game) {
   state.prevScreen = 'main';
   showScreen(game);
   updateGameBalances();
+  if (game === 'horses') {
+    setTimeout(() => hrInit(), 100);
+  }
   if (game === 'aviator') {
     av2RenderHistory();
     setTimeout(() => {
@@ -3104,6 +3178,279 @@ async function av2Bet(slotId) {
 
 
 function renderAvHistory() { av2RenderHistory(); }
+
+// ── HORSE RACING GAME ──────────────────────────────────────────────────────────
+const HR = {
+  horses: [], phase: 'betting', // betting|racing|finished
+  selectedHorse: null, stake: 0, betPlaced: false,
+  raceInterval: null, countdownInterval: null,
+  countdown: 30, trackWidth: 0, winnerIdx: null,
+  history: []
+};
+
+const HR_HORSES = [
+  { id:1, name:'Thunder Bolt', emoji:'🐎', color:'#ff4444' },
+  { id:2, name:'Gold Rush',    emoji:'🐴', color:'#ffd700' },
+  { id:3, name:'Night Storm',  emoji:'🐎', color:'#9b59b6' },
+  { id:4, name:'Iron Hoof',    emoji:'🐴', color:'#3498db' },
+  { id:5, name:'Lucky Star',   emoji:'🐎', color:'#e67e22' },
+  { id:6, name:'Black Wind',   emoji:'🐴', color:'#2ecc71' },
+  { id:7, name:'Fire Mane',    emoji:'🐎', color:'#e74c3c' },
+  { id:8, name:'Silver Bolt',  emoji:'🐴', color:'#95a5a6' },
+];
+
+function hrGenOdds(idx, count) {
+  // Generate varied odds: some favorites, some underdogs
+  const base = [1.8, 2.2, 2.8, 3.5, 4.2, 5.0, 6.5, 8.0];
+  // Shuffle slightly per race
+  const shuffled = base.map((v, i) => +(v + (Math.random() - 0.5) * 0.4).toFixed(2));
+  return shuffled[idx];
+}
+
+function hrInit() {
+  if (HR.countdownInterval) clearInterval(HR.countdownInterval);
+  if (HR.raceInterval) clearInterval(HR.raceInterval);
+
+  // Pick 6-8 random horses
+  const shuffled = [...HR_HORSES].sort(() => Math.random() - 0.5);
+  const count = 6 + Math.floor(Math.random() * 3); // 6-8 horses
+  HR.horses = shuffled.slice(0, count).map((h, i) => ({
+    ...h, position: 0, speed: 2 + Math.random() * 3,
+    odds: hrGenOdds(i, count), finished: false, place: 0
+  }));
+
+  HR.phase = 'betting';
+  HR.selectedHorse = null;
+  HR.betPlaced = false;
+  HR.stake = 0;
+  HR.winnerIdx = null;
+  HR.countdown = 30;
+
+  hrRenderTrack();
+  hrRenderGrid();
+  hrUpdateStatus();
+  hrStartCountdown();
+
+  const bal = $('hr-balance');
+  if (bal) bal.textContent = 'KSh ' + state.balance.toLocaleString();
+  const winner = $('hr-winner-banner');
+  if (winner) winner.style.display = 'none';
+  const betBtn = $('hr-bet-btn');
+  if (betBtn) { betBtn.disabled = false; betBtn.textContent = '🐎 Place Bet'; }
+}
+
+function hrRenderTrack() {
+  const track = $('hr-track');
+  if (!track) return;
+  HR.trackWidth = track.offsetWidth - 30;
+
+  track.innerHTML = HR.horses.map((h, i) => `
+    <div class="hr-lane">
+      <div class="hr-num" style="color:${h.color}">${h.id}</div>
+      <div class="hr-name" style="color:${h.color}">${h.name}</div>
+      <div class="hr-odds-badge">${h.odds}x</div>
+      <div style="flex:1;position:relative;height:100%">
+        <div class="hr-horse" id="hr-horse-${h.id}" style="left:0">${h.emoji}</div>
+        <div class="hr-finish"></div>
+      </div>
+    </div>`).join('');
+}
+
+function hrRenderGrid() {
+  const grid = $('hr-horses-grid');
+  if (!grid) return;
+  grid.innerHTML = HR.horses.map(h => `
+    <div class="hr-card ${HR.selectedHorse?.id === h.id ? 'selected' : ''}" id="hr-card-${h.id}" onclick="hrSelectHorse(${h.id})">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span style="font-size:20px">${h.emoji}</span>
+        <div>
+          <div style="font-size:12px;font-weight:800;color:${h.color}">#${h.id} ${h.name}</div>
+          <div style="font-size:11px;color:var(--text2)">Odds: <strong style="color:var(--green)">${h.odds}x</strong></div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function hrSelectHorse(id) {
+  if (HR.phase !== 'betting' || HR.betPlaced) return;
+  HR.selectedHorse = HR.horses.find(h => h.id === id);
+  hrRenderGrid();
+  const nameEl = $('hr-selected-name');
+  const oddsEl = $('hr-selected-odds');
+  if (nameEl) nameEl.textContent = '#' + HR.selectedHorse.id + ' ' + HR.selectedHorse.name;
+  if (oddsEl) oddsEl.textContent = HR.selectedHorse.odds + 'x';
+  hrUpdatePotWin();
+}
+
+function hrUpdatePotWin() {
+  const stake = parseFloat($('hr-stake')?.value) || 0;
+  const odds = HR.selectedHorse?.odds || 0;
+  const el = $('hr-pot-win');
+  if (el) el.textContent = 'KSh ' + (stake * odds).toFixed(2);
+}
+
+// Update potential win on stake input
+document.addEventListener('input', e => { if (e.target.id === 'hr-stake') hrUpdatePotWin(); });
+
+function hrUpdateStatus() {
+  const el = $('hr-status');
+  if (!el) return;
+  if (HR.phase === 'betting') {
+    el.textContent = '🟢 Place Your Bets — Race starts in ' + HR.countdown + 's';
+    el.className = 'hr-status open';
+  } else if (HR.phase === 'racing') {
+    el.textContent = '🏇 Race in Progress!';
+    el.className = 'hr-status racing';
+  } else {
+    el.className = 'hr-status finished';
+  }
+}
+
+function hrStartCountdown() {
+  HR.countdownInterval = setInterval(() => {
+    HR.countdown--;
+    hrUpdateStatus();
+    if (HR.countdown <= 0) {
+      clearInterval(HR.countdownInterval);
+      hrStartRace();
+    }
+  }, 1000);
+}
+
+function hrPlaceBet() {
+  if (HR.phase !== 'betting') { showToast('Betting is closed', 'error'); return; }
+  if (!HR.selectedHorse) { showToast('Select a horse first', 'error'); return; }
+  const stake = parseFloat($('hr-stake')?.value);
+  if (!stake || stake < 10) { showToast('Minimum bet is KSh 10', 'error'); return; }
+  if (stake > state.balance) { showToast('Insufficient balance', 'error'); return; }
+
+  HR.stake = stake;
+  HR.betPlaced = true;
+  state.balance = parseFloat((state.balance - stake).toFixed(2));
+  updateBalances();
+  saveUserBalance().catch(e => {});
+
+  const betBtn = $('hr-bet-btn');
+  if (betBtn) { betBtn.disabled = true; betBtn.textContent = '✅ Bet Placed — KSh ' + stake; }
+  const bal = $('hr-balance');
+  if (bal) bal.textContent = 'KSh ' + state.balance.toLocaleString();
+  showToast('🐎 Bet placed on #' + HR.selectedHorse.id + ' ' + HR.selectedHorse.name + '!', 'success', 3000);
+}
+
+function hrStartRace() {
+  HR.phase = 'racing';
+  hrUpdateStatus();
+  const betBtn = $('hr-bet-btn');
+  if (betBtn) betBtn.disabled = true;
+
+  // Pre-determine winner server-side style (hidden from UI until race ends)
+  // Weighted by odds (lower odds = higher chance)
+  const weights = HR.horses.map(h => 1 / h.odds);
+  const totalWeight = weights.reduce((a, b) => a + b, 0);
+  let r = Math.random() * totalWeight;
+  let winnerIdx = 0;
+  for (let i = 0; i < weights.length; i++) {
+    r -= weights[i];
+    if (r <= 0) { winnerIdx = i; break; }
+  }
+  HR.winnerIdx = winnerIdx;
+
+  // Assign speeds — winner gets slightly faster speed on average
+  HR.horses.forEach((h, i) => {
+    h.position = 0;
+    h.baseSpeed = i === winnerIdx ? 3.5 + Math.random() * 2 : 2 + Math.random() * 3;
+    h.finished = false;
+    h.place = 0;
+  });
+
+  let placesFinished = 0;
+  const trackEl = $('hr-track');
+  const trackWidth = trackEl ? trackEl.offsetWidth - 80 : 250;
+
+  HR.raceInterval = setInterval(() => {
+    let allFinished = true;
+
+    HR.horses.forEach((h, i) => {
+      if (h.finished) return;
+      allFinished = false;
+
+      // Random speed variation each tick
+      const speedBoost = h.baseSpeed + (Math.random() - 0.3) * 3;
+      h.position = Math.min(h.position + speedBoost, trackWidth);
+
+      // Update horse position on track
+      const el = $('hr-horse-' + h.id);
+      if (el) el.style.left = h.position + 'px';
+
+      // Check if finished
+      if (h.position >= trackWidth) {
+        h.finished = true;
+        placesFinished++;
+        h.place = placesFinished;
+      }
+    });
+
+    if (allFinished || placesFinished >= HR.horses.length) {
+      clearInterval(HR.raceInterval);
+      hrFinishRace();
+    }
+  }, 80);
+}
+
+function hrFinishRace() {
+  HR.phase = 'finished';
+  const winner = HR.horses.find(h => h.place === 1) || HR.horses[HR.winnerIdx];
+
+  // Show winner banner
+  const banner = $('hr-winner-banner');
+  const winnerText = $('hr-winner-text');
+  const resultText = $('hr-result-text');
+  if (banner) banner.style.display = '';
+  if (winnerText) winnerText.textContent = '🏆 #' + winner.id + ' ' + winner.name + ' Wins!';
+
+  // Settle bet
+  let resultMsg = '';
+  if (HR.betPlaced && HR.selectedHorse) {
+    if (HR.selectedHorse.id === winner.id) {
+      const winAmount = parseFloat((HR.stake * HR.selectedHorse.odds).toFixed(2));
+      state.balance = parseFloat((state.balance + winAmount).toFixed(2));
+      updateBalances();
+      saveUserBalance().catch(e => {});
+      const bal = $('hr-balance');
+      if (bal) bal.textContent = 'KSh ' + state.balance.toLocaleString();
+      resultMsg = '🎉 Your horse won! KSh ' + winAmount.toLocaleString() + ' credited!';
+      showToast(resultMsg, 'success', 5000);
+      const card = $('hr-card-' + winner.id);
+      if (card) card.className = 'hr-card winner';
+    } else {
+      resultMsg = '😔 Your horse #' + HR.selectedHorse.id + ' ' + HR.selectedHorse.name + ' lost.';
+      showToast(resultMsg, 'error', 3000);
+    }
+  } else {
+    resultMsg = 'No bet placed this race.';
+  }
+  if (resultText) resultText.textContent = resultMsg;
+
+  // Update status
+  const statusEl = $('hr-status');
+  if (statusEl) {
+    statusEl.textContent = '🏁 Race Finished! Next race in 15s...';
+    statusEl.className = 'hr-status finished';
+  }
+
+  // Add to history
+  HR.history.unshift({ winner: winner.name, winnerId: winner.id, odds: winner.odds, round: Date.now() });
+  HR.history = HR.history.slice(0, 10);
+
+  // Next race in 15 seconds
+  let cd = 15;
+  const nextTimer = setInterval(() => {
+    cd--;
+    const s = $('hr-status');
+    if (s) s.textContent = '🏁 Race Finished! Next race in ' + cd + 's...';
+    if (cd <= 0) { clearInterval(nextTimer); hrInit(); }
+  }, 1000);
+}
 
 // ── Mines ──────────────────────────────────────────────────────────────────────
 function setMineCount(n, el) {
