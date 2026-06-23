@@ -3207,24 +3207,42 @@ function hrGenOdds(idx, count) {
   return shuffled[idx];
 }
 
-function hrInit() {
+async function hrInit() {
   if (HR.countdownInterval) clearInterval(HR.countdownInterval);
   if (HR.raceInterval) clearInterval(HR.raceInterval);
-
-  // Pick 6-8 random horses
-  const shuffled = [...HR_HORSES].sort(() => Math.random() - 0.5);
-  const count = 6 + Math.floor(Math.random() * 3); // 6-8 horses
-  HR.horses = shuffled.slice(0, count).map((h, i) => ({
-    ...h, position: 0, speed: 2 + Math.random() * 3,
-    odds: hrGenOdds(i, count), finished: false, place: 0
-  }));
 
   HR.phase = 'betting';
   HR.selectedHorse = null;
   HR.betPlaced = false;
   HR.stake = 0;
+  HR.raceId = null;
   HR.winnerIdx = null;
   HR.countdown = 30;
+
+  // Get race from backend (winner determined server-side)
+  try {
+    const res = await fetch(API + '/api/games/horses/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.token }
+    });
+    const data = await res.json();
+    if (data.success) {
+      HR.raceId = data.raceId;
+      // Map backend horses to local format with emojis
+      HR.horses = data.horses.map((h, i) => ({
+        ...h,
+        emoji: HR_HORSES.find(x => x.id === h.id)?.emoji || '🐎',
+        color: HR_HORSES[i % HR_HORSES.length].color,
+        position: 0, finished: false, place: 0,
+        baseSpeed: 2 + Math.random() * 3
+      }));
+    } else {
+      hrInitLocal(); return;
+    }
+  } catch(e) {
+    console.warn('Backend unavailable, using local race');
+    hrInitLocal(); return;
+  }
 
   hrRenderTrack();
   hrRenderGrid();
@@ -3237,6 +3255,25 @@ function hrInit() {
   if (winner) winner.style.display = 'none';
   const betBtn = $('hr-bet-btn');
   if (betBtn) { betBtn.disabled = false; betBtn.textContent = '🐎 Place Bet'; }
+}
+
+// Local fallback if backend unavailable
+function hrInitLocal() {
+  const shuffled = [...HR_HORSES].sort(() => Math.random() - 0.5);
+  const count = 6 + Math.floor(Math.random() * 3);
+  HR.horses = shuffled.slice(0, count).map((h, i) => ({
+    ...h, position: 0, baseSpeed: 2 + Math.random() * 3,
+    odds: hrGenOdds(i, count), finished: false, place: 0
+  }));
+  // Determine winner locally
+  const weights = HR.horses.map(h => 1 / h.odds);
+  const total = weights.reduce((a,b) => a+b, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < weights.length; i++) { r -= weights[i]; if (r <= 0) { HR.winnerIdx = i; break; } }
+  hrRenderTrack(); hrRenderGrid(); hrUpdateStatus(); hrStartCountdown();
+  const bal = $('hr-balance'); if (bal) bal.textContent = 'KSh ' + state.balance.toLocaleString();
+  const winner = $('hr-winner-banner'); if (winner) winner.style.display = 'none';
+  const betBtn = $('hr-bet-btn'); if (betBtn) { betBtn.disabled = false; betBtn.textContent = '🐎 Place Bet'; }
 }
 
 function hrRenderTrack() {
@@ -3317,7 +3354,7 @@ function hrStartCountdown() {
   }, 1000);
 }
 
-function hrPlaceBet() {
+async function hrPlaceBet() {
   if (HR.phase !== 'betting') { showToast('Betting is closed', 'error'); return; }
   if (!HR.selectedHorse) { showToast('Select a horse first', 'error'); return; }
   const stake = parseFloat($('hr-stake')?.value);
@@ -3326,10 +3363,31 @@ function hrPlaceBet() {
 
   HR.stake = stake;
   HR.betPlaced = true;
-  state.balance = parseFloat((state.balance - stake).toFixed(2));
-  updateBalances();
-  saveUserBalance().catch(e => {});
 
+  // Call backend if raceId available
+  if (HR.raceId && state.token) {
+    try {
+      const res = await fetch(API + '/api/games/horses/bet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.token },
+        body: JSON.stringify({ raceId: HR.raceId, horseId: HR.selectedHorse.id, stake })
+      });
+      const data = await res.json();
+      if (data.success) {
+        state.balance = data.balance;
+      } else {
+        // Fallback to local deduction
+        state.balance = parseFloat((state.balance - stake).toFixed(2));
+      }
+    } catch(e) {
+      state.balance = parseFloat((state.balance - stake).toFixed(2));
+    }
+  } else {
+    state.balance = parseFloat((state.balance - stake).toFixed(2));
+    saveUserBalance().catch(e => {});
+  }
+
+  updateBalances();
   const betBtn = $('hr-bet-btn');
   if (betBtn) { betBtn.disabled = true; betBtn.textContent = '✅ Bet Placed — KSh ' + stake; }
   const bal = $('hr-balance');
@@ -3397,7 +3455,7 @@ function hrStartRace() {
   }, 80);
 }
 
-function hrFinishRace() {
+async function hrFinishRace() {
   HR.phase = 'finished';
   const winner = HR.horses.find(h => h.place === 1) || HR.horses[HR.winnerIdx];
 
@@ -3408,23 +3466,49 @@ function hrFinishRace() {
   if (banner) banner.style.display = '';
   if (winnerText) winnerText.textContent = '🏆 #' + winner.id + ' ' + winner.name + ' Wins!';
 
-  // Settle bet
+  // Settle bet via backend
   let resultMsg = '';
-  if (HR.betPlaced && HR.selectedHorse) {
+  if (HR.betPlaced && HR.selectedHorse && HR.raceId && state.token) {
+    try {
+      const res = await fetch(API + '/api/games/horses/finish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.token },
+        body: JSON.stringify({ raceId: HR.raceId, odds: HR.selectedHorse.odds })
+      });
+      const data = await res.json();
+      if (data.won) {
+        state.balance = data.balance;
+        updateBalances();
+        const bal = $('hr-balance'); if (bal) bal.textContent = 'KSh ' + state.balance.toLocaleString();
+        resultMsg = '🎉 Your horse won! KSh ' + data.winAmount.toLocaleString() + ' credited!';
+        showToast(resultMsg, 'success', 5000);
+        const card = $('hr-card-' + winner.id); if (card) card.className = 'hr-card winner';
+      } else {
+        resultMsg = '😔 Your horse #' + HR.selectedHorse.id + ' ' + HR.selectedHorse.name + ' lost.';
+        showToast(resultMsg, 'error', 3000);
+      }
+    } catch(e) {
+      // Local fallback
+      if (HR.selectedHorse.id === winner.id) {
+        const winAmount = parseFloat((HR.stake * HR.selectedHorse.odds).toFixed(2));
+        state.balance = parseFloat((state.balance + winAmount).toFixed(2));
+        updateBalances(); saveUserBalance().catch(e => {});
+        resultMsg = '🎉 Your horse won! KSh ' + winAmount.toLocaleString() + ' credited!';
+        showToast(resultMsg, 'success', 5000);
+      } else {
+        resultMsg = '😔 Lost.'; showToast(resultMsg, 'error', 3000);
+      }
+    }
+  } else if (HR.betPlaced && HR.selectedHorse) {
+    // Local settlement fallback
     if (HR.selectedHorse.id === winner.id) {
       const winAmount = parseFloat((HR.stake * HR.selectedHorse.odds).toFixed(2));
       state.balance = parseFloat((state.balance + winAmount).toFixed(2));
-      updateBalances();
-      saveUserBalance().catch(e => {});
-      const bal = $('hr-balance');
-      if (bal) bal.textContent = 'KSh ' + state.balance.toLocaleString();
+      updateBalances(); saveUserBalance().catch(e => {});
       resultMsg = '🎉 Your horse won! KSh ' + winAmount.toLocaleString() + ' credited!';
       showToast(resultMsg, 'success', 5000);
-      const card = $('hr-card-' + winner.id);
-      if (card) card.className = 'hr-card winner';
     } else {
-      resultMsg = '😔 Your horse #' + HR.selectedHorse.id + ' ' + HR.selectedHorse.name + ' lost.';
-      showToast(resultMsg, 'error', 3000);
+      resultMsg = '😔 Your horse lost.'; showToast(resultMsg, 'error', 3000);
     }
   } else {
     resultMsg = 'No bet placed this race.';
