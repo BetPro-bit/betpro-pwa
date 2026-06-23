@@ -2335,73 +2335,93 @@ async function settlePendingBets() {
   const pending = state.betHistory.filter(t => t.status === 'pending');
   if (pending.length === 0) return;
 
-  // Fetch finished matches from backend
+  // Fetch finished matches - last 2 days
   let finishedMatches = [];
   try {
-    const res = await fetch(API + '/api/matches?status=FINISHED');
+    const today = new Date().toISOString().split('T')[0];
+    const twoDaysAgo = new Date(Date.now() - 2*86400000).toISOString().split('T')[0];
+    const res = await fetch(`${API}/api/matches?dateFrom=${twoDaysAgo}&dateTo=${today}&status=FINISHED`);
     const data = await res.json();
     finishedMatches = data.matches || [];
-  } catch(e) { return; }
+    console.log('Finished matches for settlement:', finishedMatches.length);
+  } catch(e) {
+    console.warn('Settlement fetch failed:', e.message);
+    return;
+  }
 
-  if (finishedMatches.length === 0) return;
-
-  // Build result map: matchId -> outcome
+  // Build result map keyed by both id (number) and string
   const resultMap = {};
   finishedMatches.forEach(m => {
-    const home = m.score?.fullTime?.home;
-    const away = m.score?.fullTime?.away;
-    if (home === null || away === null || home === undefined) return;
-    let outcome;
-    if (home > away) outcome = '1 Home';
-    else if (away > home) outcome = '2 Away';
-    else outcome = 'X Draw';
-
-    // Goals markets
-    const totalGoals = home + away;
+    const home = m.score?.fullTime?.home ?? m.score?.fullTime?.homeTeam;
+    const away = m.score?.fullTime?.away ?? m.score?.fullTime?.awayTeam;
+    if (home === null || home === undefined) return;
+    const totalGoals = (home || 0) + (away || 0);
     const btts = home > 0 && away > 0;
-    resultMap[m.id] = {
+    const result = {
       '1 Home': home > away,
+      '1': home > away,
       'X Draw': home === away,
+      'X': home === away,
       '2 Away': away > home,
+      '2': away > home,
       'GG': btts,
       'NG': !btts,
       'Over 2.5': totalGoals > 2.5,
-      'Under 2.5': totalGoals < 2.5,
-      'Over 9.5': false, // corners not available on free tier
-      'Under 9.5': false,
+      'Under 2.5': totalGoals <= 2.5,
+      'Over 9.5': null,
+      'Under 9.5': null,
     };
+    resultMap[m.id] = result;
+    resultMap[String(m.id)] = result;
+    // Also map by team names for fuzzy matching
+    resultMap[m.homeTeam?.name + ' vs ' + m.awayTeam?.name] = result;
   });
+
+  console.log('Result map keys:', Object.keys(resultMap).length);
 
   let changed = false;
   state.betHistory = state.betHistory.map(ticket => {
     if (ticket.status !== 'pending') return ticket;
 
-    // Check if all selections have results
-    const allSettled = ticket.selections.every(s => resultMap[s.matchId] !== undefined);
-    if (!allSettled) return ticket;
+    // Check each selection
+    let allWon = true;
+    let anySettled = false;
 
-    // Check if all selections won
-    const allWon = ticket.selections.every(s => {
-      const matchResult = resultMap[s.matchId];
-      if (!matchResult) return false;
-      // Match selection label to result
+    for (const s of ticket.selections) {
+      // Try to find result by matchId or match name
+      const result = resultMap[s.matchId] || resultMap[String(s.matchId)] || resultMap[s.match];
+
+      if (!result) {
+        // Match not finished yet — can't settle this bet
+        allWon = false;
+        continue;
+      }
+
+      anySettled = true;
       const sel = s.selection;
-      if (matchResult[sel] !== undefined) return matchResult[sel];
-      // Fuzzy match for labels like "1 Home", "X Draw", "2 Away"
-      if (sel.includes('Home')) return matchResult['1 Home'];
-      if (sel.includes('Draw')) return matchResult['X Draw'];
-      if (sel.includes('Away')) return matchResult['2 Away'];
-      if (sel.includes('GG') || sel === 'GG') return matchResult['GG'];
-      if (sel.includes('NG') || sel === 'NG') return matchResult['NG'];
-      if (sel.includes('Over 2.5')) return matchResult['Over 2.5'];
-      if (sel.includes('Under 2.5')) return matchResult['Under 2.5'];
-      return false;
-    });
+
+      // Find matching result
+      let selWon = null;
+      for (const key of Object.keys(result)) {
+        if (sel === key || sel.includes(key) || key.includes(sel.split(' ')[0])) {
+          selWon = result[key];
+          break;
+        }
+      }
+
+      // Corners — can't verify, treat as lost
+      if (sel.includes('Cor') || sel.includes('9.5')) selWon = false;
+      if (selWon === null) selWon = false;
+      if (!selWon) allWon = false;
+    }
+
+    // Only settle if at least one match result found
+    if (!anySettled) return ticket;
 
     changed = true;
     const newStatus = allWon ? 'won' : 'lost';
+    console.log('Settling ticket', ticket.id, '->', newStatus);
 
-    // Credit winnings if won
     if (allWon) {
       const winAmount = parseFloat((ticket.stake * ticket.total_odds).toFixed(2));
       state.balance = parseFloat((state.balance + winAmount).toFixed(2));
