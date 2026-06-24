@@ -1611,7 +1611,7 @@ function showScreen(name) {
   $('screen-' + name).classList.add('active');
 }
 function switchTab(tab) {
-  ['home','sports','casino','wallet','profile','virtual','horses'].forEach(t => {
+  ['home','sports','casino','wallet','profile','virtual'].forEach(t => {
     $('tab-' + t).classList.toggle('hidden', t !== tab);
     const tb = $('tabbar-' + t); if (tb) tb.classList.toggle('active', t === tab);
   });
