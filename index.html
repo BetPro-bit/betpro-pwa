@@ -1191,6 +1191,7 @@
 
   <!-- MODALS -->
   <!-- Deposit Modal -->
+  <!-- Deposit Modal -->
   <div class="modal-overlay hidden" id="deposit-modal">
     <div class="modal">
       <div class="modal-handle"></div>
@@ -1199,68 +1200,80 @@
         <button class="modal-close" onclick="closeDepositModal()">✕</button>
       </div>
 
-      <!-- Payment method toggle -->
-      <div style="display:flex;gap:8px;margin-bottom:16px">
-        <div id="method-stk" onclick="setDepositMethod('stk')" style="flex:1;padding:10px;border-radius:10px;border:2px solid var(--green);background:var(--green-glow);text-align:center;cursor:pointer">
-          <div style="font-size:18px">📱</div>
-          <div style="font-size:12px;font-weight:700;color:var(--green)">STK Push</div>
-          <div style="font-size:10px;color:var(--text2)">PIN prompt on phone</div>
-        </div>
-        <div id="method-buygoods" onclick="setDepositMethod('buygoods')" style="flex:1;padding:10px;border-radius:10px;border:2px solid var(--border);background:var(--bg3);text-align:center;cursor:pointer">
-          <div style="font-size:18px">🏦</div>
-          <div style="font-size:12px;font-weight:700;color:var(--text2)">Buy Goods</div>
-          <div style="font-size:10px;color:var(--text2)">Pay manually via M-Pesa</div>
+      <!-- STK Push label -->
+      <div style="display:flex;align-items:center;gap:10px;background:var(--green-glow);border:1px solid var(--border2);border-radius:10px;padding:12px;margin-bottom:16px">
+        <div style="font-size:24px">📱</div>
+        <div>
+          <div style="font-size:14px;font-weight:800;color:var(--green)">STK Push</div>
+          <div style="font-size:11px;color:var(--text2)">You will get an M-Pesa PIN prompt on your phone</div>
         </div>
       </div>
 
-      <!-- STK Push section -->
-      <div id="stk-section">
-        <div class="form-group">
-          <label class="form-label">M-Pesa Phone Number</label>
-          <div class="phone-row">
-            <div class="dial-code">🇰🇪 +254</div>
-            <input class="form-input" id="dep-phone" type="tel" placeholder="7XXXXXXXX or 1XXXXXXXX" maxlength="10"/>
-          </div>
-        </div>
-        <div class="form-group mt-8">
-          <label class="form-label">Amount (KSh)</label>
-          <input class="form-input" id="dep-amount" type="number" placeholder="Min KSh 20"/>
-        </div>
-        <div class="quick-amounts">
-          <button class="quick-btn" onclick="document.getElementById('dep-amount').value=100">KSh 100</button>
-          <button class="quick-btn" onclick="document.getElementById('dep-amount').value=500">KSh 500</button>
-          <button class="quick-btn" onclick="document.getElementById('dep-amount').value=1000">KSh 1,000</button>
-          <button class="quick-btn" onclick="document.getElementById('dep-amount').value=2000">KSh 2,000</button>
-          <button class="quick-btn" onclick="document.getElementById('dep-amount').value=5000">KSh 5,000</button>
-        </div>
-        <button class="btn btn-green mt-8" id="dep-btn" onclick="handleDeposit()">💳 Pay Now</button>
-        <div class="modal-note">You will receive an M-Pesa STK push. Enter your PIN to confirm.</div>
+      <!-- Amount input -->
+      <div class="form-group">
+        <label class="form-label">Amount (KSh)</label>
+        <input class="form-input" id="dep-amount" type="number" placeholder="Min KSh 20"/>
       </div>
+      <div class="quick-amounts">
+        <button class="quick-btn" onclick="document.getElementById('dep-amount').value=100">KSh 100</button>
+        <button class="quick-btn" onclick="document.getElementById('dep-amount').value=500">KSh 500</button>
+        <button class="quick-btn" onclick="document.getElementById('dep-amount').value=1000">KSh 1,000</button>
+        <button class="quick-btn" onclick="document.getElementById('dep-amount').value=2000">KSh 2,000</button>
+        <button class="quick-btn" onclick="document.getElementById('dep-amount').value=5000">KSh 5,000</button>
+      </div>
+      <button class="btn btn-green mt-8" id="dep-btn" onclick="handleDeposit()">💳 Pay Now</button>
+      <div class="modal-note">Enter amount and click Pay Now to receive M-Pesa PIN prompt.</div>
 
       <!-- Buy Goods section -->
-      <div id="buygoods-section" style="display:none">
-        <div style="background:var(--bg3);border-radius:12px;padding:16px;margin-bottom:16px">
-          <div style="font-size:12px;color:var(--text2);margin-bottom:12px;font-weight:600">Follow these steps on your phone:</div>
-          <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+        <div style="font-size:12px;color:var(--text2);text-align:center;margin-bottom:10px">Or pay manually via Till</div>
+        <div style="background:var(--bg3);border-radius:12px;padding:14px;margin-bottom:12px">
+          <div style="display:flex;flex-direction:column;gap:8px">
             <div style="display:flex;align-items:center;gap:10px">
-              <div style="width:24px;height:24px;border-radius:50%;background:var(--green);color:#000;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
-              <span style="font-size:13px;color:var(--text)">Go to <strong>M-Pesa → Lipa na M-Pesa → Buy Goods</strong></span>
+              <div style="width:22px;height:22px;border-radius:50%;background:var(--green);color:#000;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+              <span style="font-size:12px;color:var(--text)">Go to <strong>M-Pesa → Lipa na M-Pesa → Buy Goods</strong></span>
             </div>
             <div style="display:flex;align-items:center;gap:10px">
-              <div style="width:24px;height:24px;border-radius:50%;background:var(--green);color:#000;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
-              <span style="font-size:13px;color:var(--text)">Business Till: <strong style="color:var(--green);font-size:15px">3488107</strong></span>
+              <div style="width:22px;height:22px;border-radius:50%;background:var(--green);color:#000;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+              <span style="font-size:12px;color:var(--text)">Business Till: <strong style="color:var(--green);font-size:14px">3488107</strong></span>
             </div>
             <div style="display:flex;align-items:center;gap:10px">
-              <div style="width:24px;height:24px;border-radius:50%;background:var(--green);color:#000;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
-              <span style="font-size:13px;color:var(--text)">Enter amount & M-Pesa PIN</span>
+              <div style="width:22px;height:22px;border-radius:50%;background:var(--green);color:#000;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
+              <span style="font-size:12px;color:var(--text)">Enter amount & M-Pesa PIN</span>
             </div>
           </div>
         </div>
-
-        <button class="btn btn-green" onclick="checkBuyGoodsPayment()">✅ I've Paid — Check Now</button>
-        <div class="modal-note">No account number needed. Your balance updates automatically after payment.</div>
+        <button class="btn btn-outline" onclick="checkBuyGoodsPayment()">✅ I've Paid — Check Now</button>
       </div>
 
+    </div>
+  </div>
+
+  <!-- PesaPal Payment iframe Modal -->
+  <div class="modal-overlay hidden" id="pesapal-modal" style="z-index:1000;background:rgba(0,0,0,0.95);align-items:stretch;padding:0">
+    <div style="display:flex;flex-direction:column;width:100%;height:100%;max-width:480px;margin:0 auto">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="font-size:18px">📱</div>
+          <div>
+            <div style="font-size:14px;font-weight:800">M-Pesa STK Push</div>
+            <div style="font-size:11px;color:var(--text2)">Complete your payment below</div>
+          </div>
+        </div>
+        <button onclick="closePesapalModal()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+      </div>
+      <!-- Loading state -->
+      <div id="pesapal-loading" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:16px">
+        <div style="width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin 1s linear infinite"></div>
+        <div style="color:var(--text2);font-size:14px">Loading payment...</div>
+      </div>
+      <!-- iframe -->
+      <iframe id="pesapal-iframe" style="flex:1;border:none;display:none" onload="onIframeLoad()"></iframe>
+      <!-- Footer note -->
+      <div style="padding:10px 16px;background:var(--bg2);border-top:1px solid var(--border);text-align:center;font-size:11px;color:var(--text3);flex-shrink:0">
+        🔒 Secure M-Pesa payment • Select M-Pesa and enter your phone to get PIN prompt
+      </div>
     </div>
   </div>
 
@@ -2569,46 +2582,9 @@ async function renderWallet() {
 }
 const BUGOODS_NUMBER = '3488107';
 const BUYGOODS_STORE = '1172450';
-let depositMethod = 'stk';
-
-function setDepositMethod(method) {
-  depositMethod = method;
-  const stkEl = $('stk-section');
-  const pbEl = $('buygoods-section');
-  const stkBtn = $('method-stk');
-  const pbBtn = $('method-buygoods');
-  if (method === 'stk') {
-    stkEl.style.display = '';
-    pbEl.style.display = 'none';
-    stkBtn.style.border = '2px solid var(--green)';
-    stkBtn.style.background = 'var(--green-glow)';
-    stkBtn.querySelector('div:nth-child(2)').style.color = 'var(--green)';
-    pbBtn.style.border = '2px solid var(--border)';
-    pbBtn.style.background = 'var(--bg3)';
-    pbBtn.querySelector('div:nth-child(2)').style.color = 'var(--text2)';
-  } else {
-    stkEl.style.display = 'none';
-    pbEl.style.display = '';
-    pbBtn.style.border = '2px solid var(--green)';
-    pbBtn.style.background = 'var(--green-glow)';
-    pbBtn.querySelector('div:nth-child(2)').style.color = 'var(--green)';
-    stkBtn.style.border = '2px solid var(--border)';
-    stkBtn.style.background = 'var(--bg3)';
-    stkBtn.querySelector('div:nth-child(2)').style.color = 'var(--text2)';
-    // Show user's phone as account reference
-    const phone = state.user?.phone || state.user?.user_metadata?.phone || '';
-    const ref = phone.replace(/^\+?254/, '0').replace(/^0+/, '0') || 'your phone';
-    if ($('buygoods-ref-display')) $('buygoods-ref-display').textContent = ref;
-    if ($('buygoods-account')) $('buygoods-account').textContent = ref;
-  }
-}
-
 function openDepositModal() {
-  depositMethod = 'stk';
   $('deposit-modal').classList.remove('hidden');
-  // Reset to STK view
-  if ($('stk-section')) $('stk-section').style.display = '';
-  if ($('buygoods-section')) $('buygoods-section').style.display = 'none';
+  if ($('dep-amount')) $('dep-amount').value = '';
 }
 function closeDepositModal() { $('deposit-modal').classList.add('hidden'); }
 
@@ -2638,54 +2614,88 @@ async function checkBuyGoodsPayment() {
 function openWithdrawModal() { $('with-balance-display').textContent = fmtBal(state.balance); $('withdraw-modal').classList.remove('hidden'); }
 function closeWithdrawModal() { $('withdraw-modal').classList.add('hidden'); }
 
+// PesaPal iframe modal
+let _pesapalTrackingId = null;
+let _pesapalAmount = 0;
+let _pesapalPollTimer = null;
+
+function closePesapalModal() {
+  $('pesapal-modal').classList.add('hidden');
+  $('pesapal-iframe').src = '';
+  if (_pesapalPollTimer) clearInterval(_pesapalPollTimer);
+}
+
+function onIframeLoad() {
+  $('pesapal-loading').style.display = 'none';
+  $('pesapal-iframe').style.display = 'block';
+}
+
+function startPesapalPolling(trackingId, amount) {
+  let attempts = 0;
+  _pesapalPollTimer = setInterval(async () => {
+    attempts++;
+    if (attempts > 24) { // 2 minutes max
+      clearInterval(_pesapalPollTimer);
+      return;
+    }
+    try {
+      const res = await fetch(API + '/api/payments/status/' + trackingId, {
+        headers: { 'Authorization': 'Bearer ' + state.token }
+      });
+      const data = await res.json();
+      if (data.status === 'completed') {
+        clearInterval(_pesapalPollTimer);
+        closePesapalModal();
+        state.balance += amount;
+        await saveUserBalance();
+        state.transactions.unshift({ type:'deposit', icon:'💰', desc:'M-Pesa Deposit', amount, date:new Date().toISOString().split('T')[0] });
+        updateBalances(); renderWallet();
+        showToast(`✅ KSh ${amount.toLocaleString()} added to your wallet!`, 'success', 5000);
+      } else if (data.status === 'failed') {
+        clearInterval(_pesapalPollTimer);
+        closePesapalModal();
+        showToast('Payment was cancelled or failed.', 'error');
+      }
+    } catch(e) {}
+  }, 5000);
+}
+
 async function handleDeposit() {
-  const phone = $('dep-phone').value.trim();
   const amount = parseInt($('dep-amount').value);
-  if (!phone || phone.length < 9) { showToast('Enter valid phone number', 'error'); return; }
   if (!amount || amount < 20) { showToast('Minimum deposit is KSh 20', 'error'); return; }
   setLoading('dep-btn', true, '');
   try {
+    // Use logged-in user's phone from state
+    const phone = state.user?.phone || '';
     const res = await fetch(API + '/api/payments/stkpush', {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.token},
-      body: JSON.stringify({ phone:'254'+phone.replace(/^0/,''), amount, accountReference:'BETPRO-DEP', transactionDesc:'BetPro Deposit' })
+      body: JSON.stringify({ phone, amount })
     });
     const data = await res.json();
-    if (!data.success && !data.CheckoutRequestID) throw new Error('STK failed');
+    if (!data.redirect_url) throw new Error('No redirect URL');
+
+    // Close deposit modal, open PesaPal iframe modal
     closeDepositModal();
-    showToast(`📱 STK Push sent! Enter M-Pesa PIN on your phone`, 'success', 5000);
-    // Poll for payment confirmation — do NOT add balance until confirmed
-    pollPaymentStatus(data.CheckoutRequestID, amount);
+    _pesapalTrackingId = data.CheckoutRequestID;
+    _pesapalAmount = amount;
+
+    // Show iframe modal
+    $('pesapal-modal').classList.remove('hidden');
+    $('pesapal-loading').style.display = 'flex';
+    $('pesapal-iframe').style.display = 'none';
+    $('pesapal-iframe').src = data.redirect_url;
+
+    // Start polling for payment confirmation
+    startPesapalPolling(data.CheckoutRequestID, amount);
+
   } catch(e) {
-    closeDepositModal();
-    showToast(`❌ Payment failed. Please try again or contact support.`, 'error');
+    showToast(`❌ Payment failed. Please try again.`, 'error');
   }
   setLoading('dep-btn', false, '💳 Pay Now');
 }
 
-async function pollPaymentStatus(checkoutRequestId, amount, attempts = 0) {
-  if (attempts > 10) { showToast('Payment not confirmed. If money was deducted contact support.', 'error'); return; }
-  await new Promise(r => setTimeout(r, 5000));
-  try {
-    const res = await fetch(API + '/api/payments/status/' + checkoutRequestId, {
-      headers: { 'Authorization': 'Bearer ' + state.token }
-    });
-    const data = await res.json();
-    if (data.status === 'completed') {
-      state.balance += amount;
-      await saveUserBalance();
-      state.transactions.unshift({ type:'deposit', icon:'💰', desc:'M-Pesa Deposit', amount, date:new Date().toISOString().split('T')[0] });
-      updateBalances(); renderWallet();
-      showToast(`✅ KSh ${amount.toLocaleString()} added to your wallet!`);
-    } else if (data.status === 'failed') {
-      showToast('Payment was cancelled or failed.', 'error');
-    } else {
-      pollPaymentStatus(checkoutRequestId, amount, attempts + 1);
-    }
-  } catch(e) {
-    pollPaymentStatus(checkoutRequestId, amount, attempts + 1);
-  }
-}
+
 
 async function handleWithdraw() {
   const phone = $('with-phone').value.trim();
