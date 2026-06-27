@@ -603,11 +603,6 @@
           <button class="hero-btn btn-green" onclick="switchTab('sports')">Bet Now →</button>
           <button class="hero-btn" style="background:transparent;border:1px solid var(--green);color:var(--green)" onclick="switchTab('casino')">Casino 🎰</button>
         </div>
-        <a href="https://betpro-bit.github.io/betpro-pwa/BetPro%20Win.apk" download style="text-decoration:none;display:block;margin-top:12px">
-          <button class="hero-btn" style="width:100%;background:#1a2e1a;border:1px solid var(--green);color:var(--green);display:flex;align-items:center;justify-content:center;gap:8px">
-            📲 Download BetPro App (Android)
-          </button>
-        </a>
       </div>
       <div class="section">
         <div class="section-header">
@@ -700,13 +695,6 @@
     <!-- PROFILE TAB -->
     <div id="tab-profile" class="main-content hidden">
       <div class="header"><div class="header-title">👤 Profile</div></div>
-      <div style="background:linear-gradient(90deg,#00ff87,#00c96b);margin:12px 16px;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px">
-        <div style="font-size:22px">🎁</div>
-        <div>
-          <div style="font-size:13px;font-weight:900;color:#000">Deposit KSh 50 and above</div>
-          <div style="font-size:12px;font-weight:700;color:#004d28">Get 100% Bonus on your deposit!</div>
-        </div>
-      </div>
       <div style="overflow-y:auto;padding-bottom:80px">
         <div class="profile-card">
           <div class="avatar" id="profile-avatar">BP</div>
@@ -1960,6 +1948,8 @@ async function handleLogin() {
     saveSession(); showScreen('main'); updateBalances();
     fetchRealMatches();
     showToast('Welcome back! 🎉');
+    // Initialize push notifications
+    setTimeout(() => initPushNotifications(), 3000);
   }
   setLoading('login-btn', false, 'Sign In →');
 }
@@ -3907,13 +3897,13 @@ initCountryChips();
     if (session) {
       state.token = session.access_token;
       state.user = { id: session.user.id, phone: session.user.user_metadata?.phone || '' };
-      // Save to localStorage for future restores
       localStorage.setItem('bp_token', session.access_token);
       localStorage.setItem('bp_user_id', session.user.id);
       localStorage.setItem('bp_phone', session.user.user_metadata?.phone || '');
       await loadUserBalance(session.user.id);
       showScreen('main'); updateBalances();
       fetchRealMatches();
+      setTimeout(() => initPushNotifications(), 3000);
       return;
     }
 
@@ -3927,6 +3917,7 @@ initCountryChips();
       await loadUserBalance(userId);
       showScreen('main'); updateBalances();
       fetchRealMatches();
+      setTimeout(() => initPushNotifications(), 3000);
       return;
     }
 
@@ -3941,9 +3932,73 @@ initCountryChips();
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js')
-      .then(reg => console.log('SW registered:', reg.scope))
+      .then(reg => {
+        console.log('SW registered:', reg.scope);
+        // Request push notification permission after login
+        window._swReg = reg;
+      })
       .catch(err => console.log('SW error:', err));
   });
+}
+
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyCGUVYJk7zZ5gi-BWTXwsl-gT35GrvmHkc",
+  authDomain: "betpro-win.firebaseapp.com",
+  projectId: "betpro-win",
+  storageBucket: "betpro-win.firebasestorage.app",
+  messagingSenderId: "163467175748",
+  appId: "1:163467175748:web:74a9716bb59077ab91d911"
+};
+
+const VAPID_KEY = "BOE3nhh0tTF4njHHMCDyVnsroMuvXoCHM8YDdW5ALYuhaKSO3nUmRZIPE1l8N4hKVK6oLSzvN2sFVMBLWHKS-eo";
+
+// Initialize FCM and subscribe user
+async function initPushNotifications() {
+  try {
+    // Dynamically load Firebase
+    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js");
+    const { getMessaging, getToken, onMessage } = await import("https://www.gstatic.com/firebasejs/12.15.0/firebase-messaging.js");
+
+    const app = initializeApp(firebaseConfig);
+    const messaging = getMessaging(app);
+
+    // Request permission
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      console.log('Push notification permission denied');
+      return;
+    }
+
+    // Get FCM token
+    const token = await getToken(messaging, {
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: window._swReg
+    });
+
+    if (token) {
+      console.log('FCM Token:', token);
+      // Save token to backend
+      await fetch(API + '/api/auth/save-fcm-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + state.token
+        },
+        body: JSON.stringify({ token })
+      });
+    }
+
+    // Handle foreground notifications
+    onMessage(messaging, (payload) => {
+      console.log('FCM message received:', payload);
+      const { title, body } = payload.notification;
+      showToast(`🔔 ${title}: ${body}`, 'success', 5000);
+    });
+
+  } catch (e) {
+    console.error('Push notification setup error:', e.message);
+  }
 }
 </script>
   <!-- Terms & Conditions Modal -->

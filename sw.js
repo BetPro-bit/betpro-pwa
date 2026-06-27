@@ -12,6 +12,34 @@ const ASSETS = [
   '/icons/icon-512.png'
 ];
 
+// Firebase messaging in service worker
+importScripts('https://www.gstatic.com/firebasejs/12.15.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/12.15.0/firebase-messaging-compat.js');
+
+firebase.initializeApp({
+  apiKey: "AIzaSyCGUVYJk7zZ5gi-BWTXwsl-gT35GrvmHkc",
+  authDomain: "betpro-win.firebaseapp.com",
+  projectId: "betpro-win",
+  storageBucket: "betpro-win.firebasestorage.app",
+  messagingSenderId: "163467175748",
+  appId: "1:163467175748:web:74a9716bb59077ab91d911"
+});
+
+const messaging = firebase.messaging();
+
+// Handle background push notifications
+messaging.onBackgroundMessage((payload) => {
+  console.log('Background FCM message:', payload);
+  const { title, body, icon } = payload.notification;
+  self.registration.showNotification(title, {
+    body,
+    icon: icon || '/icons/icon-192.png',
+    badge: '/icons/icon-72.png',
+    vibrate: [200, 100, 200],
+    data: payload.data
+  });
+});
+
 // Install — pre-cache all assets
 self.addEventListener('install', event => {
   event.waitUntil(
