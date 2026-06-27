@@ -718,7 +718,7 @@
           <div class="menu-item" onclick="switchTab('wallet')"><span class="menu-icon">💰</span><span class="menu-label">Deposit & Withdrawal</span><span class="menu-arrow">›</span></div>
           <div class="menu-item" onclick="openChangePassword()"><span class="menu-icon">🔐</span><span class="menu-label">Change Password</span><span class="menu-arrow">›</span></div>
           <div class="menu-item" onclick="openResponsibleGaming()"><span class="menu-icon">🛡️</span><span class="menu-label">Responsible Gaming</span><span class="menu-arrow">›</span></div>
-          <div class="menu-item" onclick="alert('Coming soon!')"><span class="menu-icon">🔔</span><span class="menu-label">Notifications</span><span class="menu-arrow">›</span></div>
+          <div class="menu-item" onclick="toggleNotifications()"><span class="menu-icon">🔔</span><span class="menu-label">Notifications</span><span class="menu-arrow" id="notif-status">Enable</span></div>
           <div class="menu-item" onclick="openSupportChat()"><span class="menu-icon">💬</span><span class="menu-label">Support Chat</span><span class="menu-arrow">›</span></div>
           <div class="menu-item logout" onclick="handleLogout()"><span class="menu-icon">🚪</span><span class="menu-label">Sign Out</span><span class="menu-arrow">›</span></div>
         </div>
@@ -1948,8 +1948,7 @@ async function handleLogin() {
     saveSession(); showScreen('main'); updateBalances();
     fetchRealMatches();
     showToast('Welcome back! 🎉');
-    // Initialize push notifications
-    setTimeout(() => initPushNotifications(), 3000);
+    setTimeout(() => { initPushNotifications(); updateNotifStatus(); }, 3000);
   }
   setLoading('login-btn', false, 'Sign In →');
 }
@@ -3897,13 +3896,14 @@ initCountryChips();
     if (session) {
       state.token = session.access_token;
       state.user = { id: session.user.id, phone: session.user.user_metadata?.phone || '' };
+      // Save to localStorage for future restores
       localStorage.setItem('bp_token', session.access_token);
       localStorage.setItem('bp_user_id', session.user.id);
       localStorage.setItem('bp_phone', session.user.user_metadata?.phone || '');
       await loadUserBalance(session.user.id);
       showScreen('main'); updateBalances();
       fetchRealMatches();
-      setTimeout(() => initPushNotifications(), 3000);
+      setTimeout(() => { initPushNotifications(); updateNotifStatus(); }, 3000);
       return;
     }
 
@@ -3917,7 +3917,6 @@ initCountryChips();
       await loadUserBalance(userId);
       showScreen('main'); updateBalances();
       fetchRealMatches();
-      setTimeout(() => initPushNotifications(), 3000);
       return;
     }
 
@@ -3934,15 +3933,14 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')
       .then(reg => {
         console.log('SW registered:', reg.scope);
-        // Request push notification permission after login
         window._swReg = reg;
       })
       .catch(err => console.log('SW error:', err));
   });
 }
 
-// Firebase config
-const firebaseConfig = {
+const VAPID_KEY = "BOE3nhh0tTF4njHHMCDyVnsroMuvXoCHM8YDdW5ALYuhaKSO3nUmRZIPE1l8N4hKVK6oLSzvN2sFVMBLWHKS-eo";
+const FIREBASE_CONFIG = {
   apiKey: "AIzaSyCGUVYJk7zZ5gi-BWTXwsl-gT35GrvmHkc",
   authDomain: "betpro-win.firebaseapp.com",
   projectId: "betpro-win",
@@ -3951,53 +3949,55 @@ const firebaseConfig = {
   appId: "1:163467175748:web:74a9716bb59077ab91d911"
 };
 
-const VAPID_KEY = "BOE3nhh0tTF4njHHMCDyVnsroMuvXoCHM8YDdW5ALYuhaKSO3nUmRZIPE1l8N4hKVK6oLSzvN2sFVMBLWHKS-eo";
-
-// Initialize FCM and subscribe user
 async function initPushNotifications() {
   try {
-    // Dynamically load Firebase
-    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js");
+    const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js");
     const { getMessaging, getToken, onMessage } = await import("https://www.gstatic.com/firebasejs/12.15.0/firebase-messaging.js");
-
-    const app = initializeApp(firebaseConfig);
+    const app = getApps().length ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
     const messaging = getMessaging(app);
-
-    // Request permission
     const permission = await Notification.requestPermission();
-    if (permission !== 'granted') {
-      console.log('Push notification permission denied');
-      return;
-    }
-
-    // Get FCM token
-    const token = await getToken(messaging, {
-      vapidKey: VAPID_KEY,
-      serviceWorkerRegistration: window._swReg
-    });
-
+    if (permission !== 'granted') { updateNotifStatus(); return; }
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: window._swReg });
     if (token) {
-      console.log('FCM Token:', token);
-      // Save token to backend
+      localStorage.setItem('fcm_token', token);
+      updateNotifStatus();
       await fetch(API + '/api/auth/save-fcm-token', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + state.token
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.token },
         body: JSON.stringify({ token })
       });
     }
-
-    // Handle foreground notifications
     onMessage(messaging, (payload) => {
-      console.log('FCM message received:', payload);
       const { title, body } = payload.notification;
       showToast(`🔔 ${title}: ${body}`, 'success', 5000);
     });
-
   } catch (e) {
-    console.error('Push notification setup error:', e.message);
+    console.error('Push notification error:', e.message);
+  }
+}
+
+function updateNotifStatus() {
+  const el = document.getElementById('notif-status');
+  if (!el) return;
+  if (Notification.permission === 'granted') {
+    el.textContent = '✅ On';
+    el.style.color = 'var(--green)';
+  } else if (Notification.permission === 'denied') {
+    el.textContent = '❌ Blocked';
+    el.style.color = 'var(--red)';
+  } else {
+    el.textContent = 'Enable';
+    el.style.color = '';
+  }
+}
+
+async function toggleNotifications() {
+  if (Notification.permission === 'granted') {
+    showToast('Notifications are enabled ✅ To disable, change browser settings.', 'success');
+  } else if (Notification.permission === 'denied') {
+    showToast('Notifications are blocked. Please enable in your browser settings.', 'error');
+  } else {
+    await initPushNotifications();
   }
 }
 </script>
