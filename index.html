@@ -812,11 +812,11 @@
     </div>
     <div id="chat-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--bg)">
       <div class="chat-msg support">
-        <div class="chat-bubble support-bubble">👋 Hi! I'm BetPro's AI assistant. I can help with placing bets, M-Pesa deposits (STK Push & Buy Goods 3488107), withdrawals, and account issues. What do you need?</div>
+        <div class="chat-bubble support-bubble">👋 Hi! I'm BetPro's AI assistant. I can help with placing bets, M-Pesa deposits (STK Push), withdrawals, and account issues. What do you need?</div>
         <div class="chat-time">🤖 BetPro AI</div>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
-        <button onclick="quickAsk('How do I deposit via Buy Goods?')" style="background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:12px;color:var(--text2);cursor:pointer">💳 Buy Goods deposit</button>
+        <button onclick="quickAsk('How do I deposit via STK Push?')" style="background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:12px;color:var(--text2);cursor:pointer">💳 STK Push deposit</button>
         <button onclick="quickAsk('My withdrawal is delayed')" style="background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:12px;color:var(--text2);cursor:pointer">⏳ Withdrawal delay</button>
         <button onclick="quickAsk('How do I place an accumulator bet?')" style="background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:12px;color:var(--text2);cursor:pointer">⚽ Accumulator bet</button>
         <button onclick="quickAsk('I cannot log in to my account')" style="background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:12px;color:var(--text2);cursor:pointer">🔑 Login issue</button>
@@ -3757,7 +3757,7 @@ let aiChatOpen = false;
 const AI_SYSTEM_PROMPT = `You are BetPro Support Assistant, a helpful AI for the BetPro betting platform in Kenya.
 You help users with:
 - Betting: how to place bets, understanding odds, 1X2, GG/NG, Over/Under 2.5, Corners markets, accumulator bets, bet slip
-- Deposits: M-Pesa STK Push (instant PIN prompt) and Buy Goods (Buy Goods No: 3488107, Account: user phone number)
+- Deposits: M-Pesa STK Push (instant PIN prompt on phone)
 - Withdrawals: minimum KSh 100, sent to M-Pesa, takes a few minutes
 - Account: registration with phone number, login issues, password reset
 - Games: Crash (Aviator), Plinko, Horse Racing available in the casino section
