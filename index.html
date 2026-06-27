@@ -611,9 +611,7 @@
         </div>
         <div class="games-row">
           <div class="game-card hot" onclick="openGame('aviator')"><div class="hot-badge">HOT</div><div class="game-icon">✈️</div><div class="game-name">Aviator</div><div class="game-min">Min KSh 10</div></div>
-          <div class="game-card" onclick="openGame('mines')"><div class="game-icon">💣</div><div class="game-name">Mines</div><div class="game-min">Min KSh 10</div></div>
-          <div class="game-card" onclick="openGame('wheel')"><div class="game-icon">🎡</div><div class="game-name">Wheel</div><div class="game-min">Min KSh 10</div></div>
-          <div class="game-card" onclick="openGame('dice')"><div class="game-icon">🎲</div><div class="game-name">Dice</div><div class="game-min">Min KSh 10</div></div>
+
           <div class="game-card" onclick="openGame('plinko')"><div class="game-icon">🎯</div><div class="game-name">Plinko</div><div class="game-min">Min KSh 10</div></div>
           <div class="game-card hot" onclick="openGame('horses')"><div class="hot-badge">NEW</div><div class="game-icon">🐎</div><div class="game-name">Horses</div><div class="game-min">Min KSh 10</div></div>
         </div>
@@ -658,9 +656,7 @@
         <div class="min-note mt-8">⚡ All games — Minimum stake KSh 10</div>
         <div class="casino-grid mt-16">
           <div class="casino-game-card" onclick="openGame('aviator')"><div class="hot-badge">HOT</div><div class="casino-game-icon">✈️</div><div class="casino-game-name">Aviator</div><div class="casino-game-desc">Multiplier crash game</div><div class="min-badge">Min KSh 10</div></div>
-          <div class="casino-game-card" onclick="openGame('mines')"><div class="casino-game-icon">💣</div><div class="casino-game-name">Mines</div><div class="casino-game-desc">Avoid the mines</div><div class="min-badge">Min KSh 10</div></div>
-          <div class="casino-game-card" onclick="openGame('wheel')"><div class="casino-game-icon">🎡</div><div class="casino-game-name">Lucky Wheel</div><div class="casino-game-desc">Spin to win</div><div class="min-badge">Min KSh 10</div></div>
-          <div class="casino-game-card" onclick="openGame('dice')"><div class="casino-game-icon">🎲</div><div class="casino-game-name">Dice</div><div class="casino-game-desc">Roll your luck</div><div class="min-badge">Min KSh 10</div></div>
+
           <div class="casino-game-card full-width" onclick="openGame('plinko')"><div class="casino-game-icon">🎯</div><div class="casino-game-name">Plinko</div><div class="casino-game-desc">Drop the ball, win big</div><div class="min-badge">Min KSh 10</div></div>
           <div class="casino-game-card full-width" onclick="openGame('horses')" style="border-color:var(--green)"><div class="hot-badge">NEW</div><div class="casino-game-icon">🐎</div><div class="casino-game-name">Horse Racing</div><div class="casino-game-desc">Pick your horse, race to win!</div><div class="min-badge">Min KSh 10</div></div>
         </div>
@@ -1053,112 +1049,6 @@
     </div>
   </div>
 
-  <!-- MINES -->
-  <div class="screen" id="screen-mines">
-    <div class="game-header">
-      <button class="game-back" onclick="closeGame()">← Back</button>
-      <div class="game-title">💣 Mines</div>
-      <div class="balance-chip">💰 <span id="mines-balance">0</span></div>
-    </div>
-    <div class="game-content">
-      <div class="controls-card">
-        <div class="controls-row">
-          <div class="form-group"><label class="form-label">Stake (KSh)</label><input class="form-input" id="mines-stake" type="number" value="100" min="10" id="mines-stake"/></div>
-          <div class="form-group">
-            <label class="form-label">Mines</label>
-            <div class="mine-chips">
-              <div class="mine-chip active" onclick="setMineCount(3,this)">3</div>
-              <div class="mine-chip" onclick="setMineCount(5,this)">5</div>
-              <div class="mine-chip" onclick="setMineCount(10,this)">10</div>
-            </div>
-          </div>
-        </div>
-        <div class="mult-row hidden" id="mines-mult-row">
-          <span class="color-text2" style="font-size:13px">Current Multiplier</span>
-          <span class="color-green fw-900 fs-22" id="mines-mult">1.00x</span>
-        </div>
-        <div class="btn-row">
-          <button class="btn btn-green" id="mines-start-btn" onclick="minesStart()">Start Game</button>
-          <button class="btn btn-ghost" id="mines-cash-btn" onclick="minesCashOut()" disabled>Cash Out</button>
-        </div>
-      </div>
-      <div class="mines-grid" id="mines-grid"></div>
-      <div style="font-size:13px;color:var(--text2);text-align:center" id="mines-status">Set stake and mines count, then start</div>
-    </div>
-  </div>
-
-  <!-- WHEEL -->
-  <div class="screen" id="screen-wheel">
-    <div class="game-header">
-      <button class="game-back" onclick="closeGame()">← Back</button>
-      <div class="game-title">🎡 Lucky Wheel</div>
-      <div class="balance-chip">💰 <span id="wheel-balance">0</span></div>
-    </div>
-    <div class="game-content">
-      <div class="wheel-container">
-        <div class="wheel-pointer">▼</div>
-        <canvas id="wheel-canvas" width="240" height="240" style="border-radius:50%;border:4px solid var(--gold)"></canvas>
-      </div>
-      <div class="legend-row" id="wheel-legend"></div>
-      <div class="result-box hidden" id="wheel-result"></div>
-      <div class="controls-card">
-        <div class="form-group"><label class="form-label">Stake (KSh)</label><input class="form-input" id="wheel-stake" type="number" value="100" min="10" style="text-align:center"/></div>
-        <div class="quick-amounts">
-          <button class="quick-btn" onclick="document.getElementById('wheel-stake').value=50">50</button>
-          <button class="quick-btn" onclick="document.getElementById('wheel-stake').value=100">100</button>
-          <button class="quick-btn" onclick="document.getElementById('wheel-stake').value=500">500</button>
-          <button class="quick-btn" onclick="document.getElementById('wheel-stake').value=1000">1000</button>
-        </div>
-        <button class="btn btn-green" id="wheel-spin-btn" onclick="wheelSpin()">SPIN! 🎡</button>
-        <div style="font-size:12px;color:var(--text3);text-align:center;margin-top:8px">Min stake: KSh 10</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- DICE -->
-  <div class="screen" id="screen-dice">
-    <div class="game-header">
-      <button class="game-back" onclick="closeGame()">← Back</button>
-      <div class="game-title">🎲 Dice</div>
-      <div class="balance-chip">💰 <span id="dice-balance">0</span></div>
-    </div>
-    <div class="game-content">
-      <div class="dice-display">
-        <div class="dice-face" id="dice-face">🎲</div>
-        <div class="dice-result" id="dice-result" style="color:var(--text2)">Roll to play!</div>
-      </div>
-      <div class="slider-card">
-        <div class="slider-header">
-          <span class="color-text2" style="font-size:13px">Roll Over</span>
-          <span class="color-green fw-900 fs-18" id="dice-target-display">50</span>
-        </div>
-        <div class="slider-track" onclick="diceSliderClick(event,this)"><div class="slider-fill" id="dice-fill" style="width:50%"></div></div>
-        <div class="target-btns">
-          <div class="target-btn" onclick="setDiceTarget(10)">10</div>
-          <div class="target-btn" onclick="setDiceTarget(25)">25</div>
-          <div class="target-btn active" onclick="setDiceTarget(50)">50</div>
-          <div class="target-btn" onclick="setDiceTarget(75)">75</div>
-          <div class="target-btn" onclick="setDiceTarget(90)">90</div>
-        </div>
-        <div class="odds-row-dice">
-          <div class="odds-box"><div class="odds-label">Win Chance</div><div class="odds-value" id="dice-chance">50%</div></div>
-          <div class="odds-box"><div class="odds-label">Multiplier</div><div class="odds-value color-green" id="dice-mult">1.98x</div></div>
-          <div class="odds-box"><div class="odds-label">Payout</div><div class="odds-value color-gold" id="dice-payout">KSh 198</div></div>
-        </div>
-      </div>
-      <div class="controls-card">
-        <div class="controls-row">
-          <div class="form-group"><label class="form-label">Stake (KSh)</label><input class="form-input" id="dice-stake" type="number" value="100" min="10" oninput="updateDiceOdds()"/></div>
-          <div class="form-group"><label class="form-label">Potential Win</label><div class="form-input" style="display:flex;align-items:center"><span class="color-green fw-900" id="dice-potential">KSh 198</span></div></div>
-        </div>
-        <div class="roll-btns">
-          <button class="roll-btn" style="background:var(--red);color:#fff" onclick="diceRoll('under')">Roll Under <span id="dice-under-label">50</span></button>
-          <button class="roll-btn" style="background:var(--green);color:#000" onclick="diceRoll('over')">Roll Over <span id="dice-over-label">50</span></button>
-        </div>
-      </div>
-      <div class="crash-history" id="dice-history"></div>
-    </div>
-  </div>
 
   <!-- PLINKO -->
   <div class="screen" id="screen-plinko">
@@ -1318,13 +1208,9 @@ let state = {
   currentGame: null, prevScreen: 'main',
   // Aviator
   avGameState: 'idle', avInterval: null, avMult: 1.0, avStake: 0, avBetActive: false, avHistory: [1.23,4.56,2.11,1.05,8.72,3.40,1.01],
-  // Mines
-  mineCount: 3, mineGrid: Array(25).fill('hidden'), minePositions: [], mineActive: false, mineRevealed: 0, mineMult: 1.0, mineStake: 0,
-  // Dice
-  diceTarget: 50,
-  // Wheel
-  wheelSpinning: false, wheelAngle: 0,
-  // Plinko
+  //   mineCount: 3, mineGrid: Array(25).fill('hidden'), minePositions: [], mineActive: false, mineRevealed: 0, mineMult: 1.0, mineStake: 0,
+    // Wheel
+    // Plinko
   plinkoRisk: 'medium', plinkoDropping: false,
   // Country
   country: { code:'KE', flag:'🇰🇪', name:'Kenya', dial:'+254' },
@@ -1995,9 +1881,7 @@ function openGame(game) {
       }
     }, 200);
   }
-  if (game === 'mines') renderMinesGrid();
-  if (game === 'wheel') { renderWheel(); renderWheelLegend(); }
-  if (game === 'dice') updateDiceOdds();
+  
   if (game === 'plinko') { renderPlinkoBoard(); renderPlinkoBuckets(); }
 }
 function closeGame() { showScreen('main'); updateBalances(); }
@@ -2183,7 +2067,7 @@ function updateBalances() {
   saveSession(); // only save session/localStorage, NOT Supabase
 }
 function updateGameBalances() {
-  ['av','mines','wheel','dice','plinko'].forEach(g => {
+  ['av','plinko'].forEach(g => {
     const el = $(g + '-balance'); if (el) el.textContent = 'KSh ' + state.balance.toLocaleString();
   });
 }
@@ -3864,7 +3748,7 @@ You help users with:
 - Deposits: M-Pesa STK Push (instant PIN prompt) and Buy Goods (Buy Goods No: 3488107, Account: user phone number)
 - Withdrawals: minimum KSh 100, sent to M-Pesa, takes a few minutes
 - Account: registration with phone number, login issues, password reset
-- Games: Crash, Dice, Mines, Plinko available in the casino section
+- Games: Crash (Aviator), Plinko, Horse Racing available in the casino section
 - General: responsible gambling, 18+ only, betprowincompany@gmail.com for escalations
 
 Keep responses short, friendly and helpful. Use simple English. If you cannot help, direct them to betprowincompany@gmail.com.
