@@ -1175,7 +1175,7 @@
         </div>
       </div>
       <button class="btn btn-green mt-16" id="with-btn" onclick="handleWithdraw()">📤 Withdraw Now</button>
-      <div class="modal-note">Withdrawals processed instantly to your M-Pesa</div>
+      <div class="modal-note">Withdrawals are processed within 24 hours to your M-Pesa</div>
     </div>
   </div>
 
@@ -2635,7 +2635,7 @@ async function handleWithdraw() {
         created_at: new Date()
       });
       closeWithdrawModal(); updateBalances(); renderWallet();
-      showToast(`✅ KSh ${amount.toLocaleString()} sent to +254${phone.replace(/^0/,'')}!`);
+      showToast(`✅ Withdrawal request submitted! KSh ${amount.toLocaleString()} will be sent to +254${phone.replace(/^0/,'')} within 24 hours.`, 'success', 6000);
     } else {
       showToast(data.error || 'Withdrawal failed. Try again.', 'error');
     }
