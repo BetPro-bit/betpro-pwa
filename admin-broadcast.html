@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BetPro Admin — Broadcast</title>
+<style>
+  :root {
+    --bg: #080c10;
+    --bg2: #0d1117;
+    --bg3: #131a21;
+    --border: #1d2630;
+    --green: #00ff87;
+    --green-dim: #00c96b;
+    --text: #f2f5f7;
+    --text2: #8b97a3;
+    --red: #ff4d4d;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; }
+  .brand {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 28px;
+  }
+  .brand-icon {
+    width: 36px; height: 36px; background: var(--green); border-radius: 9px;
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+  }
+  .brand-name { font-size: 18px; font-weight: 800; letter-spacing: -0.2px; }
+  .brand-name span { color: var(--green); }
+  .eyebrow {
+    font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--green-dim); margin-bottom: 6px;
+  }
+  h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
+  .sub { color: var(--text2); font-size: 14px; margin-bottom: 28px; line-height: 1.5; }
+
+  .card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px; margin-bottom: 16px;
+  }
+  .stat-row { display: flex; gap: 12px; margin-bottom: 20px; }
+  .stat {
+    flex: 1; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px; text-align: center;
+  }
+  .stat-num { font-size: 22px; font-weight: 800; color: var(--green); }
+  .stat-label { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+  label { display: block; font-size: 12px; font-weight: 700; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  input[type=text], input[type=password], textarea {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); padding: 12px 14px; font-size: 14px; font-family: inherit;
+    margin-bottom: 16px; transition: border-color 0.15s;
+  }
+  input:focus, textarea:focus { outline: none; border-color: var(--green); }
+  textarea { resize: vertical; min-height: 120px; line-height: 1.5; }
+  .char-count { font-size: 11px; color: var(--text2); text-align: right; margin-top: -10px; margin-bottom: 16px; }
+
+  .btn {
+    width: 100%; padding: 14px; border-radius: 10px; border: none;
+    font-size: 15px; font-weight: 800; cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-green { background: var(--green); color: #000; }
+  .btn-green:hover { opacity: 0.9; }
+  .btn-green:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-ghost {
+    background: transparent; border: 1px solid var(--border); color: var(--text2); margin-top: 10px;
+  }
+
+  .gate { display: flex; flex-direction: column; gap: 12px; }
+  .hidden { display: none !important; }
+
+  .log {
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px; font-size: 12px; color: var(--text2); max-height: 220px; overflow-y: auto;
+    font-family: 'SF Mono', Consolas, monospace; line-height: 1.7;
+  }
+  .log-line { display: flex; gap: 8px; }
+  .log-ok { color: var(--green); }
+  .log-fail { color: var(--red); }
+  .progress-wrap { background: var(--bg3); border-radius: 8px; height: 6px; overflow: hidden; margin-bottom: 14px; }
+  .progress-bar { height: 100%; background: var(--green); width: 0%; transition: width 0.2s; }
+
+  .preview-toggle { font-size: 12px; color: var(--green-dim); cursor: pointer; margin-bottom: 16px; display: inline-block; }
+  .preview-box {
+    background: var(--bg3); border: 1px dashed var(--border); border-radius: 10px;
+    padding: 16px; margin-bottom: 16px; font-size: 13px; line-height: 1.6;
+  }
+  .preview-box .ph { color: var(--green); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="brand">
+    <div class="brand-icon">🎯</div>
+    <div class="brand-name">Bet<span>Pro</span> Admin</div>
+  </div>
+
+  <!-- GATE: enter admin secret -->
+  <div id="gate-screen">
+    <div class="eyebrow">Restricted</div>
+    <h1>Admin sign-in</h1>
+    <p class="sub">Enter your admin key to access the broadcast tool.</p>
+    <div class="card gate">
+      <div>
+        <label>Backend URL</label>
+        <input type="text" id="backend-url" placeholder="https://mpesa-backend-og0n.onrender.com" value="https://mpesa-backend-og0n.onrender.com">
+      </div>
+      <div>
+        <label>Admin Secret</label>
+        <input type="password" id="admin-secret" placeholder="Enter your ADMIN_SECRET">
+      </div>
+      <button class="btn btn-green" onclick="unlockAdmin()">Unlock →</button>
+      <div id="gate-error" style="color:var(--red);font-size:13px;display:none"></div>
+    </div>
+  </div>
+
+  <!-- BROADCAST SCREEN -->
+  <div id="broadcast-screen" class="hidden">
+    <div class="eyebrow">Broadcast</div>
+    <h1>Message your users</h1>
+    <p class="sub">Send an email to every BetPro user on record. Use <span style="color:var(--green)">{name}</span> to personalize with their phone number.</p>
+
+    <div class="card">
+      <div class="stat-row">
+        <div class="stat"><div class="stat-num" id="stat-users">—</div><div class="stat-label">Total Users</div></div>
+        <div class="stat"><div class="stat-num" id="stat-quota">3,000</div><div class="stat-label">Monthly Email Quota</div></div>
+      </div>
+
+      <label>Subject</label>
+      <input type="text" id="msg-subject" placeholder="e.g. New Bonus This Weekend! 🎁" maxlength="120">
+
+      <label>Message</label>
+      <textarea id="msg-body" placeholder="Hi {name}, we've got something exciting for you..." maxlength="2000"></textarea>
+      <div class="char-count"><span id="char-count">0</span> / 2000</div>
+
+      <span class="preview-toggle" onclick="togglePreview()">👁 Preview email</span>
+      <div class="preview-box hidden" id="preview-box"></div>
+
+      <button class="btn btn-green" id="send-btn" onclick="sendBroadcast()">📤 Send to All Users</button>
+      <button class="btn btn-ghost" onclick="lockAdmin()">Sign out</button>
+    </div>
+
+    <div class="card hidden" id="progress-card">
+      <label>Sending progress</label>
+      <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+      <div class="log" id="send-log"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let API = '';
+let ADMIN_SECRET = '';
+let userCount = 0;
+
+function unlockAdmin() {
+  API = document.getElementById('backend-url').value.trim().replace(/\/$/, '');
+  ADMIN_SECRET = document.getElementById('admin-secret').value.trim();
+  const errEl = document.getElementById('gate-error');
+  errEl.style.display = 'none';
+
+  if (!API || !ADMIN_SECRET) {
+    errEl.textContent = 'Please fill in both fields.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  // Store for this session only
+  sessionStorage.setItem('bp_admin_api', API);
+  sessionStorage.setItem('bp_admin_secret', ADMIN_SECRET);
+
+  document.getElementById('gate-screen').classList.add('hidden');
+  document.getElementById('broadcast-screen').classList.remove('hidden');
+  fetchUserCount();
+}
+
+function lockAdmin() {
+  sessionStorage.removeItem('bp_admin_api');
+  sessionStorage.removeItem('bp_admin_secret');
+  document.getElementById('broadcast-screen').classList.add('hidden');
+  document.getElementById('gate-screen').classList.remove('hidden');
+}
+
+// Restore session
+window.addEventListener('load', () => {
+  const savedApi = sessionStorage.getItem('bp_admin_api');
+  const savedSecret = sessionStorage.getItem('bp_admin_secret');
+  if (savedApi && savedSecret) {
+    API = savedApi; ADMIN_SECRET = savedSecret;
+    document.getElementById('gate-screen').classList.add('hidden');
+    document.getElementById('broadcast-screen').classList.remove('hidden');
+    fetchUserCount();
+  }
+});
+
+async function fetchUserCount() {
+  try {
+    const res = await fetch(API + '/api/auth/user-count', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret: ADMIN_SECRET })
+    });
+    const data = await res.json();
+    if (data.success) {
+      userCount = data.count;
+      document.getElementById('stat-users').textContent = data.count.toLocaleString();
+    } else {
+      document.getElementById('stat-users').textContent = '?';
+    }
+  } catch (e) {
+    document.getElementById('stat-users').textContent = '?';
+  }
+}
+
+document.getElementById('msg-body').addEventListener('input', (e) => {
+  document.getElementById('char-count').textContent = e.target.value.length;
+});
+
+function togglePreview() {
+  const box = document.getElementById('preview-box');
+  if (box.classList.contains('hidden')) {
+    const subject = document.getElementById('msg-subject').value || '(no subject)';
+    const body = (document.getElementById('msg-body').value || '(no message)')
+      .replace(/{name}/g, '<span class="ph">+254712345678</span>')
+      .replace(/\n/g, '<br>');
+    box.innerHTML = `<strong>${subject}</strong><br><br>${body}`;
+    box.classList.remove('hidden');
+  } else {
+    box.classList.add('hidden');
+  }
+}
+
+async function sendBroadcast() {
+  const subject = document.getElementById('msg-subject').value.trim();
+  const body = document.getElementById('msg-body').value.trim();
+
+  if (!subject || !body) {
+    alert('Please fill in both subject and message.');
+    return;
+  }
+
+  if (!confirm(`Send this email to all ${userCount || 'your'} users? This cannot be undone.`)) return;
+
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+
+  const progressCard = document.getElementById('progress-card');
+  const progressBar = document.getElementById('progress-bar');
+  const log = document.getElementById('send-log');
+  progressCard.classList.remove('hidden');
+  progressBar.style.width = '10%';
+  log.innerHTML = '<div class="log-line">⏳ Connecting to server...</div>';
+
+  try {
+    const res = await fetch(API + '/api/auth/broadcast-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret: ADMIN_SECRET, subject, body })
+    });
+
+    progressBar.style.width = '90%';
+    const data = await res.json();
+
+    if (data.success) {
+      progressBar.style.width = '100%';
+      log.innerHTML = `
+        <div class="log-line log-ok">✅ Sent: ${data.sent}</div>
+        <div class="log-line ${data.failed > 0 ? 'log-fail' : ''}">⚠️ Failed: ${data.failed}</div>
+        <div class="log-line">📊 Total processed: ${data.sent + data.failed}</div>
+      `;
+      btn.textContent = '✅ Sent!';
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = '📤 Send to All Users';
+      }, 3000);
+    } else {
+      log.innerHTML = `<div class="log-line log-fail">❌ Error: ${data.error || 'Unknown error'}</div>`;
+      btn.disabled = false;
+      btn.textContent = '📤 Send to All Users';
+    }
+  } catch (e) {
+    log.innerHTML = `<div class="log-line log-fail">❌ Network error: ${e.message}</div>`;
+    btn.disabled = false;
+    btn.textContent = '📤 Send to All Users';
+  }
+}
+</script>
+</body>
+</html>
