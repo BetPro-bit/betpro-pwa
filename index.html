@@ -706,6 +706,36 @@
           <div style="font-size:12px;font-weight:700;color:#004d28">Get 100% Bonus on your deposit!</div>
         </div>
       </div>
+
+      <!-- INVITE BANNER -->
+      <div style="margin:0 16px 16px;border-radius:14px;overflow:hidden;border:1.5px solid #00ff87;background:linear-gradient(135deg,#0a1a12,#0d1a2e)">
+        <div style="background:linear-gradient(90deg,#00ff87 0%,#00c96b 100%);padding:10px 16px;display:flex;align-items:center;gap:8px">
+          <span style="font-size:20px">🤝</span>
+          <span style="font-size:13px;font-weight:900;color:#000;letter-spacing:0.3px">INVITE & EARN KSh 50!</span>
+          <span style="margin-left:auto;background:#000;color:#00ff87;font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px">FREE MONEY</span>
+        </div>
+        <div style="padding:14px 16px">
+          <div style="font-size:12px;color:#8b97a3;margin-bottom:10px;line-height:1.5">Invite a friend to BetPro Win. When they make their <strong style="color:#f2f5f7">first deposit</strong>, you automatically get <strong style="color:#00ff87">KSh 50</strong> added to your balance! 🎉</div>
+          <div style="background:#0a1a12;border:1px solid #1d2630;border-radius:10px;padding:10px 14px;margin-bottom:10px">
+            <div style="font-size:10px;color:#8b97a3;font-weight:700;margin-bottom:4px">YOUR INVITE LINK</div>
+            <div style="font-size:13px;color:#00ff87;font-weight:700;word-break:break-all" id="referral-link-text">Loading...</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button onclick="copyReferralLink()" style="flex:1;background:#00ff87;color:#000;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:800;cursor:pointer">📋 Copy Link</button>
+            <button onclick="shareReferralLink()" style="flex:1;background:transparent;border:1.5px solid #00ff87;color:#00ff87;border-radius:10px;padding:10px;font-size:13px;font-weight:800;cursor:pointer">📤 Share</button>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <div style="flex:1;background:#0a1a12;border:1px solid #1d2630;border-radius:10px;padding:10px;text-align:center">
+              <div style="font-size:20px;font-weight:900;color:#00ff87" id="ref-invited">—</div>
+              <div style="font-size:10px;color:#8b97a3;margin-top:2px">Friends Invited</div>
+            </div>
+            <div style="flex:1;background:#0a1a12;border:1px solid #1d2630;border-radius:10px;padding:10px;text-align:center">
+              <div style="font-size:20px;font-weight:900;color:#00ff87" id="ref-earned">—</div>
+              <div style="font-size:10px;color:#8b97a3;margin-top:2px">KSh Earned</div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div style="overflow-y:auto;padding-bottom:80px">
         <div class="profile-card">
           <div class="avatar" id="profile-avatar">BP</div>
@@ -1501,7 +1531,7 @@ function switchTab(tab) {
   if (tab === 'home') { fetchRealMatches(); updateTicker(); }
   if (tab === 'sports') { renderSports(); fetchRealMatches(); }
   if (tab === 'wallet') renderWallet();
-  if (tab === 'profile') renderProfile();
+  if (tab === 'profile') { renderProfile(); loadReferralStats(); }
   if (tab === 'virtual') vfInit();
 }
 
@@ -2020,7 +2050,19 @@ async function handleRegister() {
     }
   } else {
     if (data.user) {
-      await sb.from('users').insert({ id: data.user.id, phone: state.country.dial + phone, email, balance: 0, country: state.country.code });
+      const ref = localStorage.getItem('bp_ref') || null;
+      const referralCode = 'BP' + Math.random().toString(36).slice(2, 8).toUpperCase();
+      // Resolve referrer id from ref code
+      let referredBy = null;
+      if (ref) {
+        const { data: referrer } = await sb.from('users').select('id').eq('referral_code', ref).single();
+        if (referrer) referredBy = referrer.id;
+      }
+      await sb.from('users').insert({
+        id: data.user.id, phone: state.country.dial + phone, email, balance: 0,
+        country: state.country.code, referral_code: referralCode, referred_by: referredBy
+      });
+      if (ref) localStorage.removeItem('bp_ref');
     }
     $('otp-phone-display').textContent = email;
     showScreen('otp'); showToast('Check your email for verification link!');
@@ -3938,6 +3980,63 @@ initCountryChips();
 })();
 
 // ── Service Worker Registration ────────────────────────────────────────────────
+// ── REFERRAL SYSTEM ───────────────────────────────────────────────────────────
+let _referralCode = null;
+
+async function loadReferralStats() {
+  if (!state.token) return;
+  try {
+    const res = await fetch(API + '/api/auth/referral-stats', {
+      headers: { 'Authorization': 'Bearer ' + state.token }
+    });
+    const data = await res.json();
+    if (!data.success) return;
+    _referralCode = data.code;
+    const link = `https://betpro-bit.github.io/betpro-pwa/?ref=${data.code}`;
+    const el = document.getElementById('referral-link-text');
+    if (el) el.textContent = link;
+    const inv = document.getElementById('ref-invited');
+    if (inv) inv.textContent = data.totalInvited;
+    const earn = document.getElementById('ref-earned');
+    if (earn) earn.textContent = 'KSh ' + (data.totalEarned || 0);
+  } catch (e) {
+    console.error('Referral stats error:', e.message);
+  }
+}
+
+function copyReferralLink() {
+  if (!_referralCode) { showToast('Loading your link...', 'error'); return; }
+  const link = `https://betpro-bit.github.io/betpro-pwa/?ref=${_referralCode}`;
+  navigator.clipboard.writeText(link).then(() => {
+    showToast('✅ Invite link copied! Share it to earn KSh 50!', 'success', 4000);
+  }).catch(() => {
+    showToast('Copy failed — try the Share button', 'error');
+  });
+}
+
+function shareReferralLink() {
+  if (!_referralCode) { showToast('Loading your link...', 'error'); return; }
+  const link = `https://betpro-bit.github.io/betpro-pwa/?ref=${_referralCode}`;
+  if (navigator.share) {
+    navigator.share({
+      title: 'Join BetPro Win!',
+      text: '🎯 Join me on BetPro Win and get a bonus on your first deposit! Use my link:',
+      url: link
+    });
+  } else {
+    navigator.clipboard.writeText(link).then(() => {
+      showToast('✅ Link copied! Share it with friends to earn KSh 50!', 'success', 4000);
+    });
+  }
+}
+
+// Read referral code from URL on page load and store it
+(function() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const ref = urlParams.get('ref');
+  if (ref) localStorage.setItem('bp_ref', ref);
+})();
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js')
