@@ -617,7 +617,7 @@
         <div class="games-row">
           <div class="game-card hot" onclick="openGame('aviator')"><div class="hot-badge">HOT</div><div class="game-icon">✈️</div><div class="game-name">Aviator</div><div class="game-min">Min KSh 10</div></div>
           <div class="game-card hot" onclick="openGame('horses')"><div class="hot-badge">NEW</div><div class="game-icon">🐎</div><div class="game-name">Horses</div><div class="game-min">Min KSh 10</div></div>
-          <div class="game-card" onclick="switchTab('virtual')"><div class="game-icon">⚽</div><div class="game-name">EPL</div><div class="game-min">Min KSh 10</div></div>
+          <div class="game-card" onclick="switchTab('virtual')"><div class="game-icon">⚽</div><div class="game-name">EPL</div><div class="game-min">Min KSh 200</div></div>
         </div>
       </div>
       <div class="stats-row">
@@ -661,7 +661,7 @@
         <div class="casino-grid mt-16">
           <div class="casino-game-card" onclick="openGame('aviator')"><div class="hot-badge">HOT</div><div class="casino-game-icon">✈️</div><div class="casino-game-name">Aviator</div><div class="casino-game-desc">Multiplier crash game</div><div class="min-badge">Min KSh 10</div></div>
           <div class="casino-game-card" onclick="openGame('horses')" style="border-color:var(--green)"><div class="hot-badge">NEW</div><div class="casino-game-icon">🐎</div><div class="casino-game-name">Horse Racing</div><div class="casino-game-desc">Pick your horse, race to win!</div><div class="min-badge">Min KSh 10</div></div>
-          <div class="casino-game-card full-width" onclick="switchTab('virtual')"><div class="hot-badge" style="background:var(--green);color:#000">LIVE</div><div class="casino-game-icon">⚽</div><div class="casino-game-name">BetPro EPL</div><div class="casino-game-desc">New round every 90 seconds</div><div class="min-badge">Min KSh 10</div></div>
+          <div class="casino-game-card full-width" onclick="switchTab('virtual')"><div class="hot-badge" style="background:var(--green);color:#000">LIVE</div><div class="casino-game-icon">⚽</div><div class="casino-game-name">BetPro EPL</div><div class="casino-game-desc">New round every 90 seconds</div><div class="min-badge">Min KSh 200</div></div>
           <div class="casino-game-card full-width" style="opacity:0.4;cursor:not-allowed" onclick="showToast('Plinko coming soon! 🎯','error')"><div class="casino-game-icon">🎯</div><div class="casino-game-name">Plinko 🔒</div><div class="casino-game-desc">Coming soon</div><div class="min-badge">Locked</div></div>
         </div>
         <div style="height:20px"></div>
@@ -866,6 +866,17 @@
         <div><div style="font-size:20px;font-weight:800">⚽ BetPro EPL</div><div style="font-size:12px;color:var(--text2)">New round every 90 seconds</div></div>
         <div style="text-align:right"><div style="font-size:11px;color:var(--text2)">Round</div><div style="font-size:18px;font-weight:800;color:var(--green)" id="vf-round-num">#1</div></div>
       </div>
+
+      <!-- MOTORBIKE PROMO BANNER -->
+      <div style="background:linear-gradient(135deg,#1a0a00,#2d1500);border:1.5px solid #ff8c00;border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px">
+        <div style="font-size:32px">🏍️</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:900;color:#ff8c00;letter-spacing:0.3px">WIN A MOTORBIKE!</div>
+          <div style="font-size:11px;color:#ffb347;margin-top:2px;line-height:1.4">Stake <strong style="color:#fff">KSh 200</strong> or more on EPL and win a brand new motorbike! 🎉</div>
+        </div>
+        <div style="background:#ff8c00;color:#000;font-size:10px;font-weight:900;padding:4px 8px;border-radius:20px;white-space:nowrap">MIN KSh 200</div>
+      </div>
+
       <div style="background:var(--bg2);border-radius:14px;padding:14px;margin-bottom:14px;border:1px solid var(--border)">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <span id="vf-phase-label" style="font-size:13px;font-weight:700;color:var(--green)">🟢 Betting Open</span>
@@ -885,8 +896,12 @@
         <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
           <span style="color:var(--text2)">Total Odds</span><span style="font-weight:800" id="vf-total-odds">0.00</span>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <input id="vf-stake" type="number" placeholder="Stake (min KSh 20)" class="form-input" style="flex:1" oninput="vfUpdateWin()" min="50"/>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <input id="vf-stake" type="number" placeholder="Stake (min KSh 200)" class="form-input" style="flex:1" oninput="vfUpdateWin()" min="200"/>
+        </div>
+        <div style="background:linear-gradient(90deg,#1a0a00,#2d1500);border:1px solid #ff8c00;border-radius:8px;padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+          <span style="font-size:16px">🏍️</span>
+          <span style="font-size:11px;color:#ffb347;font-weight:700">Stake KSh 200+ to win a <strong style="color:#ff8c00">Motorbike!</strong></span>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:12px">
           <span style="color:var(--text2)">Potential Win</span>
@@ -1860,7 +1875,7 @@ function vfPlaceBet() {
   const sels = Object.values(vfState.slip);
   if (sels.length < 6) { showToast(`Select at least 6 matches (${sels.length}/6 selected)`, 'error'); return; }
   const stake = parseFloat($('vf-stake')?.value);
-  if (!stake || stake < 20) { showToast('Minimum stake is KSh 20', 'error'); return; }
+  if (!stake || stake < 200) { showToast('Minimum stake is KSh 200 🏍️ Win a Motorbike!', 'error'); return; }
   if (stake > state.balance) { showToast('Insufficient balance', 'error'); return; }
 
   const totalOdds = parseFloat(sels.reduce((a,b) => a*b.odd, 1).toFixed(2));
