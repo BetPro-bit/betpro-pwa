@@ -528,7 +528,7 @@
         <div class="form-group">
           <label class="form-label">Email Address</label>
           <input class="form-input" id="reg-email" type="email" placeholder="your@email.com"/>
-          <span style="font-size:11px;color:var(--text3)">OTP verification code will be sent here</span>
+          <span style="font-size:11px;color:var(--text3)">We'll use this to help recover your account</span>
         </div>
         <div class="form-group">
           <label class="form-label">Password</label>
@@ -545,7 +545,7 @@
           <div class="checkbox" id="terms-check" onclick="toggleTerms()"></div>
           <div class="terms-text" onclick="toggleTerms()">I agree to the <span class="link" onclick="event.stopPropagation();showTermsModal()">Terms & Conditions</span> and confirm I am 18+ years old</div>
         </div>
-        <button class="btn btn-green" id="reg-btn" onclick="handleRegister()">Create Account & Verify →</button>
+        <button class="btn btn-green" id="reg-btn" onclick="handleRegister()">Create Account →</button>
         <div class="text-center text-sm">Already have an account? <span class="link" onclick="showScreen('login')">Sign In</span></div>
       </div>
     </div>
@@ -1995,7 +1995,7 @@ async function handleLogin() {
   const { data, error } = await sb.auth.signInWithPassword({ email: loginEmail, password });
   if (error) {
     console.warn('Login failed:', error.message, '| email tried:', loginEmail);
-    showToast('Incorrect phone or password. If you just registered, check your email for the verification link first.', 'error', 5000);
+    showToast('Incorrect phone or password. Please try again.', 'error', 5000);
   } else {
     state.token = data.session.access_token;
     state.user = { phone: '+254' + digits, id: data.user.id };
@@ -2079,10 +2079,32 @@ async function handleRegister() {
       });
       if (ref) localStorage.removeItem('bp_ref');
     }
-    $('otp-phone-display').textContent = email;
-    showScreen('otp'); showToast('Check your email for verification link!');
+
+    // Log the user straight in — no email verification step.
+    // signUp() already returns a session when email confirmation is off,
+    // but if it doesn't for any reason, fall back to signing in manually.
+    let session = data.session;
+    let userId = data.user?.id;
+    if (!session) {
+      const { data: loginData, error: loginError } = await sb.auth.signInWithPassword({ email, password });
+      if (!loginError) { session = loginData.session; userId = loginData.user.id; }
+    }
+
+    if (session) {
+      state.token = session.access_token;
+      state.user = { phone: state.country.dial + phone, id: userId };
+      await loadUserBalance(userId);
+      saveSession(); showScreen('main'); updateBalances();
+      fetchRealMatches();
+      showToast('Account created! Welcome to BetPro Win 🎉');
+      setTimeout(() => { initPushNotifications(); updateNotifStatus(); }, 3000);
+    } else {
+      // Extremely unlikely fallback — couldn't get a session either way
+      showToast('Account created! Please sign in.', 'success');
+      showScreen('login');
+    }
   }
-  setLoading('reg-btn', false, 'Create Account & Verify →');
+  setLoading('reg-btn', false, 'Create Account →');
 }
 
 function otpInput(el, idx) {
