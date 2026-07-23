@@ -675,7 +675,7 @@
         <div class="bal-card">
           <div class="bal-label">Total Balance</div>
           <div class="bal-amount" id="wallet-balance">KSh 0.00</div>
-          <div class="bonus-text">Bonus: KSh 500.00</div>
+          <div class="bonus-text" id="wallet-bonus-balance">Bonus: KSh 0.00 (play only)</div>
           <div class="action-row">
             <button class="action-btn deposit" onclick="openDepositModal()"><span>💳</span><strong>Deposit</strong></button>
             <button class="action-btn withdraw" onclick="openWithdrawModal()"><span>📤</span><strong>Withdraw</strong></button>
@@ -1258,7 +1258,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const API = 'https://mpesa-backend-og0n.onrender.com';
 let state = {
-  user: null, token: null, balance: 0,
+  user: null, token: null, balance: 0, bonusBalance: 0,
   bets: [], transactions: [],
   currentGame: null, prevScreen: 'main',
   // Aviator
@@ -1518,6 +1518,7 @@ function saveSession() {
   localStorage.setItem('bp_phone', state.user?.phone || '');
   localStorage.setItem('bp_user_id', state.user?.id || '');
   localStorage.setItem('bp_balance', state.balance);
+  localStorage.setItem('bp_bonus_balance', state.bonusBalance);
 }
 async function loadSession() {
   const token = localStorage.getItem('bp_token');
@@ -1876,12 +1877,12 @@ function vfPlaceBet() {
   if (sels.length < 6) { showToast(`Select at least 6 matches (${sels.length}/6 selected)`, 'error'); return; }
   const stake = parseFloat($('vf-stake')?.value);
   if (!stake || stake < 200) { showToast('Minimum stake is KSh 200 🏍️ Win a Motorbike!', 'error'); return; }
-  if (stake > state.balance) { showToast('Insufficient balance', 'error'); return; }
+  if (stake > totalSpendable()) { showToast('Insufficient balance', 'error'); return; }
 
   const totalOdds = parseFloat(sels.reduce((a,b) => a*b.odd, 1).toFixed(2));
   const potWin = parseFloat((stake * totalOdds).toFixed(2));
 
-  state.balance -= stake;
+  deductStake(stake);
   updateBalances();
 
   // If placing during next_window, tag it for next round
@@ -2010,12 +2011,14 @@ async function handleLogin() {
 
 async function loadUserBalance(userId) {
   try {
-    const { data, error } = await sb.from('users').select('balance').eq('id', userId).single();
+    const { data, error } = await sb.from('users').select('balance, bonus_balance').eq('id', userId).single();
     if (error) { console.error('loadUserBalance error:', error.message); return; }
     state.balance = data?.balance || 0;
+    state.bonusBalance = data?.bonus_balance || 0;
     localStorage.setItem('bp_balance', state.balance);
+    localStorage.setItem('bp_bonus_balance', state.bonusBalance);
     updateBalances();
-    console.log('Balance loaded from Supabase:', state.balance);
+    console.log('Balance loaded from Supabase:', state.balance, 'Bonus:', state.bonusBalance);
   } catch(e) {
     console.error('loadUserBalance failed:', e.message);
   }
@@ -2031,9 +2034,12 @@ async function refreshBalance() {
 async function saveUserBalance() {
   if (!state.user?.id) { console.warn('saveUserBalance: no user id'); return; }
   try {
-    const { error } = await sb.from('users').update({ balance: state.balance }).eq('id', state.user.id);
+    const { error } = await sb.from('users').update({ balance: state.balance, bonus_balance: state.bonusBalance }).eq('id', state.user.id);
     if (error) console.error('Balance save error:', error.message);
-    else localStorage.setItem('bp_balance', state.balance); // keep cache in sync
+    else {
+      localStorage.setItem('bp_balance', state.balance);
+      localStorage.setItem('bp_bonus_balance', state.bonusBalance); // keep cache in sync
+    }
   } catch(e) {
     console.error('Balance save failed:', e.message);
   }
@@ -2149,11 +2155,31 @@ window.showTermsModal = showTermsModal;
 window.hideTermsModal = hideTermsModal;
 
 // ── Balance ────────────────────────────────────────────────────────────────────
+function totalSpendable() {
+  return parseFloat((state.balance + state.bonusBalance).toFixed(2));
+}
+
+// Spends from bonus balance first, then real balance. Any winnings from a bet
+// still land in state.balance (real, withdrawable) regardless of what funded
+// the stake — see settlePendingBets() / game win handlers.
+function deductStake(amount) {
+  amount = parseFloat(amount.toFixed(2));
+  if (state.bonusBalance >= amount) {
+    state.bonusBalance = parseFloat((state.bonusBalance - amount).toFixed(2));
+  } else {
+    const remainder = parseFloat((amount - state.bonusBalance).toFixed(2));
+    state.bonusBalance = 0;
+    state.balance = parseFloat((state.balance - remainder).toFixed(2));
+  }
+}
+
 function updateBalances() {
   const bal = state.balance.toLocaleString('en-KE', {minimumFractionDigits:2});
   $('home-balance').textContent = 'KSh ' + bal;
   $('wallet-balance').textContent = 'KSh ' + bal;
   $('profile-balance').textContent = 'KSh ' + bal;
+  const bonusEl = $('wallet-bonus-balance');
+  if (bonusEl) bonusEl.textContent = 'Bonus: KSh ' + state.bonusBalance.toLocaleString('en-KE', {minimumFractionDigits:2}) + ' (play only)';
   saveSession(); // only save session/localStorage, NOT Supabase
 }
 function updateGameBalances() {
@@ -2298,14 +2324,14 @@ function updateSlipWin() {
 async function placeBet() {
   const stake = parseFloat($('slip-stake').value);
   if (!stake || stake < 22) { showToast('Minimum stake is KSh 22', 'error'); return; }
-  if (stake > state.balance) { showToast('Insufficient balance', 'error'); return; }
+  if (stake > totalSpendable()) { showToast('Insufficient balance', 'error'); return; }
   if (state.bets.length === 0) { showToast('No selections', 'error'); return; }
 
   const totalOdds = parseFloat(state.bets.reduce((a,b) => a*b.odd, 1).toFixed(2));
   const potWin = parseFloat((stake * totalOdds).toFixed(2));
 
-  // Deduct balance
-  state.balance = parseFloat((state.balance - stake).toFixed(2));
+  // Deduct stake — bonus balance first, then real balance
+  deductStake(stake);
 
   // Build ticket object
   const ticket = {
@@ -3052,11 +3078,11 @@ async function av2Bet(slotId) {
   const stake = parseFloat($('av-stake-'+slotId)?.value);
   const auto = parseFloat($('av-auto-'+slotId)?.value) || 0;
   if (!stake || stake < 10) { showToast('Minimum bet is KSh 10', 'error'); return; }
-  if (stake > state.balance) { showToast('Insufficient balance', 'error'); return; }
+  if (stake > totalSpendable()) { showToast('Insufficient balance', 'error'); return; }
 
   slot.stake = stake; slot.auto = auto; slot.active = true; slot.cashedOut = false;
   slot.pendingBackend = true;
-  state.balance -= stake;
+  deductStake(stake);
 
   const status = $('av-status-'+slotId);
   if (status) { status.textContent = '✅ KSh ' + stake + ' placed' + (auto ? ' — Auto @' + auto + 'x' : ''); status.style.color = '#ff7800'; }
@@ -3165,11 +3191,11 @@ async function av2Bet(slotId) {
   const stake = parseFloat($('av-stake-'+slotId)?.value);
   const auto = parseFloat($('av-auto-'+slotId)?.value) || 0;
   if (!stake || stake < 10) { showToast('Minimum bet is KSh 10', 'error'); return; }
-  if (stake > state.balance) { showToast('Insufficient balance', 'error'); return; }
+  if (stake > totalSpendable()) { showToast('Insufficient balance', 'error'); return; }
 
   slot.stake = stake; slot.auto = auto; slot.active = true; slot.cashedOut = false;
   slot.pendingBackend = true;
-  state.balance -= stake;
+  deductStake(stake);
 
   const status = $('av-status-'+slotId);
   if (status) { status.textContent = '✅ KSh ' + stake + ' placed' + (auto ? ' — Auto @' + auto + 'x' : ''); status.style.color = '#ff7800'; }
@@ -3361,7 +3387,7 @@ async function hrPlaceBet() {
   if (!HR.selectedHorse) { showToast('Select a horse first', 'error'); return; }
   const stake = parseFloat($('hr-stake')?.value);
   if (!stake || stake < 10) { showToast('Minimum bet is KSh 10', 'error'); return; }
-  if (stake > state.balance) { showToast('Insufficient balance', 'error'); return; }
+  if (stake > totalSpendable()) { showToast('Insufficient balance', 'error'); return; }
 
   HR.stake = stake;
   HR.betPlaced = true;
@@ -3376,16 +3402,19 @@ async function hrPlaceBet() {
       });
       const data = await res.json();
       if (data.success) {
+        // NOTE: this endpoint returns an authoritative balance from the backend,
+        // which doesn't know about bonus_balance splitting. Until /api/games/horses/bet
+        // is updated to be bonus-aware, this path only touches real balance.
         state.balance = data.balance;
       } else {
         // Fallback to local deduction
-        state.balance = parseFloat((state.balance - stake).toFixed(2));
+        deductStake(stake);
       }
     } catch(e) {
-      state.balance = parseFloat((state.balance - stake).toFixed(2));
+      deductStake(stake);
     }
   } else {
-    state.balance = parseFloat((state.balance - stake).toFixed(2));
+    deductStake(stake);
     saveUserBalance().catch(e => {});
   }
 
@@ -3551,8 +3580,8 @@ function renderMinesGrid() {
 function minesStart() {
   const stake = parseFloat($('mines-stake').value);
   if (!stake || stake < 10) { showToast('Minimum stake is KSh 10', 'error'); return; }
-  if (stake > state.balance) { showToast('Insufficient balance', 'error'); return; }
-  state.balance -= stake; state.mineStake = stake; state.mineRevealed = 0; state.mineMult = 1.0;
+  if (stake > totalSpendable()) { showToast('Insufficient balance', 'error'); return; }
+  deductStake(stake); state.mineStake = stake; state.mineRevealed = 0; state.mineMult = 1.0;
   state.mineGrid = Array(25).fill('hidden');
   const mines = []; while(mines.length < state.mineCount) { const r = Math.floor(Math.random()*25); if(!mines.includes(r)) mines.push(r); }
   state.minePositions = mines; state.mineActive = true;
@@ -3614,9 +3643,9 @@ function renderWheelLegend() {
 function wheelSpin() {
   const stake = parseFloat($('wheel-stake').value);
   if (!stake || stake < 10) { showToast('Minimum stake is KSh 10','error'); return; }
-  if (stake > state.balance) { showToast('Insufficient balance','error'); return; }
+  if (stake > totalSpendable()) { showToast('Insufficient balance','error'); return; }
   if (state.wheelSpinning) return;
-  state.balance -= stake; state.wheelSpinning = true;
+  deductStake(stake); state.wheelSpinning = true;
   $('wheel-spin-btn').disabled = true; $('wheel-spin-btn').textContent = 'Spinning...';
   $('wheel-result').classList.add('hidden');
   updateGameBalances(); updateBalances();
@@ -3691,8 +3720,8 @@ function diceSliderClick(e,el) {
 function diceRoll(type) {
   const stake = parseFloat($('dice-stake').value);
   if (!stake || stake < 10) { showToast('Minimum stake is KSh 10','error'); return; }
-  if (stake > state.balance) { showToast('Insufficient balance','error'); return; }
-  state.balance -= stake;
+  if (stake > totalSpendable()) { showToast('Insufficient balance','error'); return; }
+  deductStake(stake);
   const rolled = Math.floor(Math.random()*100)+1;
   const faces = ['🎲','⚀','⚁','⚂','⚃','⚄','⚅'];
   $('dice-face').textContent = faces[Math.floor(Math.random()*6)+1];
@@ -3738,9 +3767,9 @@ const PLINKO_WEIGHTS = [0.01,0.06,0.14,0.24,0.10,0.24,0.14,0.06,0.01];
 function plinkoDrop() {
   const stake = parseFloat($('plinko-stake').value);
   if (!stake || stake < 10) { showToast('Minimum stake is KSh 10','error'); return; }
-  if (stake > state.balance) { showToast('Insufficient balance','error'); return; }
+  if (stake > totalSpendable()) { showToast('Insufficient balance','error'); return; }
   if (state.plinkoDropping) return;
-  state.balance -= stake; state.plinkoDropping = true;
+  deductStake(stake); state.plinkoDropping = true;
   $('plinko-drop-btn').disabled = true; $('plinko-drop-btn').textContent = 'Ball Dropping...';
   $('plinko-result').classList.add('hidden');
   updateGameBalances(); updateBalances();
