@@ -2699,10 +2699,12 @@ async function pollPaymentStatus(checkoutRequestId, amount, attempts = 0) {
     const data = await res.json();
     if (data.status === 'completed') {
       closeStkWaitingModal();
-      state.balance += amount;
-      await saveUserBalance();
+      // Re-fetch from Supabase rather than incrementing locally — the FXS Pay
+      // webhook already credited real balance AND any deposit bonus server-side.
+      // Overwriting with a locally-computed value here would wipe that bonus out.
+      await loadUserBalance(state.user.id);
       state.transactions.unshift({ type:'deposit', icon:'💰', desc:'M-Pesa Deposit', amount, date:new Date().toISOString().split('T')[0] });
-      updateBalances(); renderWallet();
+      renderWallet();
       showToast(`✅ KSh ${amount.toLocaleString()} added to your wallet!`);
     } else if (data.status === 'failed') {
       closeStkWaitingModal();
