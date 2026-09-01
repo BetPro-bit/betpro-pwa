@@ -1371,52 +1371,33 @@ async function fetchRealMatches() {
   const dbTime = $('api-debug-time');
   if (matchesList) matchesList.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)"><span class="spinner"></span> Loading matches...</div>';
   if (homeList) homeList.innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px"><span class="spinner"></span></div>';
-  if (dbMsg) dbMsg.textContent = '⏳ Fetching from football-data.org...';
+  if (dbMsg) dbMsg.textContent = '⏳ Fetching matches...';
 
-  const today = new Date();
-  const future = new Date(today); future.setDate(future.getDate() + 4);
-  const dateFrom = today.toISOString().split('T')[0];
-  const dateTo = future.toISOString().split('T')[0];
-  const endpoint = `${FOOTBALL_API_BASE}/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`;
-
-  let res, data, source = '';
+  let data;
   try {
-    res = await fetch(endpoint, { headers: { 'X-Auth-Token': FOOTBALL_API_KEY } });
+    const res = await fetch(`${API}/api/matches/upcoming`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     data = await res.json();
-    source = 'direct';
-    console.log('✅ Football API direct:', data.matches?.length, 'matches');
+    console.log('✅ Matches from backend:', data.matches?.length, 'matches');
   } catch(e) {
-    console.warn('Direct fetch failed:', e.message, '— trying CORS proxy...');
-    if (dbMsg) dbMsg.textContent = '🔄 Direct blocked, trying proxy...';
-    try {
-      const proxy = `https://corsproxy.io/?${encodeURIComponent(endpoint)}`;
-      res = await fetch(proxy, { headers: { 'X-Auth-Token': FOOTBALL_API_KEY } });
-      if (!res.ok) throw new Error(`Proxy HTTP ${res.status}`);
-      data = await res.json();
-      source = 'proxy';
-      console.log('✅ Football API via proxy:', data.matches?.length, 'matches');
-    } catch(e2) {
-      console.error('Both fetch attempts failed:', e2.message);
-      if (dbMsg) dbMsg.innerHTML = `❌ API failed: ${e2.message}`;
-      if (dbTime) dbTime.textContent = new Date().toLocaleTimeString();
-      const errHtml = `
-        <div style="text-align:center;padding:40px;color:var(--text2)">
-          <div style="font-size:32px;margin-bottom:12px">⚽</div>
-          <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px">Could not load matches</div>
-          <div style="font-size:13px;margin-bottom:4px;color:var(--red)">${e2.message}</div>
-          <div style="font-size:12px;margin-bottom:16px;color:var(--text3)">Check browser console (F12) for details</div>
-          <button class="btn btn-outline" style="width:auto;padding:10px 24px" onclick="fetchRealMatches()">↺ Retry</button>
-        </div>`;
-      if (matchesList) matchesList.innerHTML = errHtml;
-      if (homeList) homeList.innerHTML = errHtml;
-      return;
-    }
+    console.error('Backend fetch failed:', e.message);
+    if (dbMsg) dbMsg.innerHTML = `❌ Failed to load matches: ${e.message}`;
+    if (dbTime) dbTime.textContent = new Date().toLocaleTimeString();
+    const errHtml = `
+      <div style="text-align:center;padding:40px;color:var(--text2)">
+        <div style="font-size:32px;margin-bottom:12px">⚽</div>
+        <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px">Could not load matches</div>
+        <div style="font-size:13px;margin-bottom:4px;color:var(--red)">${e.message}</div>
+        <button class="btn btn-outline" style="width:auto;padding:10px 24px" onclick="fetchRealMatches()">↺ Retry</button>
+      </div>`;
+    if (matchesList) matchesList.innerHTML = errHtml;
+    if (homeList) homeList.innerHTML = errHtml;
+    return;
   }
 
   const matches = data.matches || [];
   const now = new Date().toLocaleTimeString();
-  if (dbMsg) dbMsg.textContent = `✅ ${matches.length} matches loaded (${source})`;
+  if (dbMsg) dbMsg.textContent = `✅ ${matches.length} matches loaded`;
   if (dbTime) dbTime.textContent = now;
 
   if (matches.length === 0) {
