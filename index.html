@@ -603,7 +603,7 @@
           <button class="hero-btn btn-green" onclick="switchTab('sports')">Bet Now →</button>
           <button class="hero-btn" style="background:transparent;border:1px solid var(--green);color:var(--green)" onclick="switchTab('casino')">Casino 🎰</button>
         </div>
-        <a href="https://betpro-bit.github.io/betpro-pwa/BetPro%20Win.apk" download style="text-decoration:none;display:block;margin-top:12px">
+        <a href="https://betprowin.github.io/bt/BetPro%20Win.apk" download style="text-decoration:none;display:block;margin-top:12px">
           <button class="hero-btn" style="width:100%;background:#1a2e1a;border:1px solid var(--green);color:var(--green);display:flex;align-items:center;justify-content:center;gap:8px">
             📲 Download BetPro App (Android)
           </button>
@@ -3783,7 +3783,7 @@ async function handleForgotPassword() {
     return;
   }
   const { error } = await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: 'https://betpro-bit.github.io/betpro-pwa/'
+    redirectTo: 'https://betprowin.github.io/bt/'
   });
   if (error) {
     showToast('Could not send reset email. Check your email address.', 'error');
@@ -4043,7 +4043,7 @@ async function loadReferralStats() {
     const data = await res.json();
     if (!data.success) return;
     _referralCode = data.code;
-    const link = `https://betpro-bit.github.io/betpro-pwa/?ref=${data.code}`;
+    const link = `https://betprowin.github.io/bt/?ref=${data.code}`;
     const el = document.getElementById('referral-link-text');
     if (el) el.textContent = link;
     const inv = document.getElementById('ref-invited');
@@ -4057,7 +4057,7 @@ async function loadReferralStats() {
 
 function copyReferralLink() {
   if (!_referralCode) { showToast('Loading your link...', 'error'); return; }
-  const link = `https://betpro-bit.github.io/betpro-pwa/?ref=${_referralCode}`;
+  const link = `https://betprowin.github.io/bt/?ref=${_referralCode}`;
   navigator.clipboard.writeText(link).then(() => {
     showToast('✅ Invite link copied! Share it to earn KSh 50!', 'success', 4000);
   }).catch(() => {
@@ -4067,7 +4067,7 @@ function copyReferralLink() {
 
 function shareReferralLink() {
   if (!_referralCode) { showToast('Loading your link...', 'error'); return; }
-  const link = `https://betpro-bit.github.io/betpro-pwa/?ref=${_referralCode}`;
+  const link = `https://betprowin.github.io/bt/?ref=${_referralCode}`;
   if (navigator.share) {
     navigator.share({
       title: 'Join BetPro Win!',
